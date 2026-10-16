@@ -30,6 +30,8 @@ common_components=(
     GreeterController.qml
     GreeterWindow.qml
     IconButton.qml
+    SessionLaunchGate.qml
+    SessionLaunchPolicy.qml
     SystemChrome.qml
 )
 for component in "${common_components[@]}"; do
@@ -50,10 +52,13 @@ if [[ -L "$project_root/shaders/pulse.frag.qsb" ]]; then
     exit 1
 fi
 cp -- "$project_root/shaders/pulse.frag.qsb" "$build_tree/shaders/pulse.frag.qsb"
+# Pre-login entrypoint. The default SessionLaunchPolicy has no user or command,
+# so this tree blocks every launch until an owned policy replaces it.
+cp -- "$project_root/greeter/shell.qml" "$build_tree/shell.qml"
 
 (
     cd "$build_tree"
-    find components assets shaders -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+    find shell.qml components assets shaders -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
 )
 
 if [[ -e "$staging_tree" ]]; then

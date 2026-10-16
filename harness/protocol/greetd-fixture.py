@@ -26,13 +26,17 @@ class FixtureServer:
             "cancel_session": 0,
             "start_session": 0,
         }
+        self.start_session_cmd = None
 
     def write_status(self):
         if not self.status_path:
             return
         temporary = self.status_path + ".tmp"
         with open(temporary, "w", encoding="utf-8") as status_file:
-            json.dump(self.counts, status_file, sort_keys=True)
+            status = dict(self.counts)
+            if self.start_session_cmd is not None:
+                status["start_session_cmd"] = self.start_session_cmd
+            json.dump(status, status_file, sort_keys=True)
             status_file.write("\n")
         os.replace(temporary, self.status_path)
 
@@ -148,9 +152,18 @@ class FixtureServer:
                     "auth_message": "Late fixture prompt",
                 })
         elif kind == "start_session":
-            # Record and reject the request. This fixture has no subprocess or
-            # shell launch code, even if a client violates the 0.7 barrier.
+            # This fixture has no subprocess or shell launch code. Only the
+            # launch-acknowledged scenario acknowledges a request from the
+            # ready stage; it records the argv and still executes nothing.
             self.counts["start_session"] += 1
+            if self.scenario == "launch-acknowledged" and self.stage == "ready":
+                cmd = request.get("cmd")
+                if isinstance(cmd, list) and all(isinstance(part, str) for part in cmd):
+                    self.start_session_cmd = cmd
+                self.stage = "terminal"
+                self.write_status()
+                self.send(connection, {"type": "success"})
+                return
             self.stage = "terminal"
             self.write_status()
             self.send(connection, {
@@ -218,6 +231,7 @@ def main():
             "error-message",
             "cancel-during-prompt",
             "late-response-after-cancel",
+            "launch-acknowledged",
         ),
     )
     args = parser.parse_args()

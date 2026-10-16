@@ -25,6 +25,10 @@ FloatingWindow {
     readonly property alias captureTarget: canvas
     readonly property alias authPanel: loginPanel
     readonly property alias chrome: systemChrome
+    // The QQuickWindow behind this Quickshell window; the launch gate attaches
+    // presentation feedback to its wl_surface.
+    readonly property var presentationWindow: canvas.Window.window
+    readonly property bool blackHeld: blackHold.visible
     implicitWidth: windowedPreview ? requestedWidth : (primaryScreen ? primaryScreen.width : 1920)
     implicitHeight: windowedPreview ? requestedHeight : (primaryScreen ? primaryScreen.height : 1080)
     screen: primaryScreen
@@ -207,6 +211,21 @@ FloatingWindow {
             controller: greeterController
             opacity: window.successPresence(.30, .78, greeterController.successProgress)
             enabled: greeterController.phase !== GreeterController.Success
+        }
+        Rectangle {
+            id: blackHold
+            // Immutable opaque black scene after SUCCESS. Nothing from the
+            // previous frame can show through while the launch gate runs.
+            anchors.fill: parent
+            z: 1000
+            color: "#000000"
+            visible: greeterController.successComplete
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.AllButtons
+                hoverEnabled: true
+                cursorShape: Qt.BlankCursor
+            }
         }
         Text {
             visible: window.debugMode

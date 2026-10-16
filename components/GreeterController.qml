@@ -22,6 +22,9 @@ Item {
     property real failureProgress: 0
     property bool failureResolving: false
     property real successProgress: 0
+    // True only after the SUCCESS timeline finished for the current Success
+    // phase. The window then holds an opaque black scene for the launch gate.
+    property bool successComplete: false
     property real authenticationTension: 0
     property string statusMessage: ""
     property bool statusMessageVisible: false
@@ -52,6 +55,7 @@ Item {
         wakeTension = 0;
         failureProgress = 0;
         successProgress = 0;
+        successComplete = false;
         phase = GreeterController.Wake;
         focusInputRequested();
         wakeTimeline.restart();
@@ -181,6 +185,7 @@ Item {
         responseRequired = false;
         echoResponse = false;
         failureResolving = false;
+        successComplete = false;
         typingAnimation.stop();
         typingPulse = 0;
         phase = GreeterController.ReturnToIdle;
@@ -301,6 +306,11 @@ Item {
         to: 1
         duration: 1480
         easing.type: Easing.InOutCubic
+
+        onFinished: {
+            if (root.phase === GreeterController.Success && root.successProgress >= 1)
+                root.successComplete = true;
+        }
     }
 
     ParallelAnimation {

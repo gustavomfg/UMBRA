@@ -15,8 +15,11 @@ Item {
     property int generation: 0
     property bool attemptActive: false
     property bool retryAfterFailure: false
+    // Generation that reached readyToLaunch; 0 when no attempt is ready.
+    property int readyGeneration: 0
+    property bool launchRequested: false
 
-    readonly property bool sessionLaunchAllowed: false
+    signal sessionLaunched(int attemptGeneration)
 
     function beginIfNeeded(userHint) {
         if (attemptActive)
@@ -34,6 +37,8 @@ Item {
         echoResponse = false;
         attemptActive = true;
         retryAfterFailure = false;
+        readyGeneration = 0;
+        launchRequested = false;
 
         const started = backend.begin(userId, selectedSession, thisGeneration);
         if (started === false && generation === thisGeneration) {
@@ -55,14 +60,23 @@ Item {
         retryAfterFailure = false;
         responseRequired = false;
         echoResponse = false;
+        readyGeneration = 0;
 
         if (backend && typeof backend.cancel === "function")
             backend.cancel(cancelledGeneration);
     }
 
-    function requestSessionLaunch() {
-        // 0.7 ends at readyToLaunch. There is deliberately no launch path here.
-        return false;
+    // Only SessionLaunchGate calls this, after the black frame was presented.
+    function requestSessionLaunch(attemptGeneration) {
+        if (attemptGeneration === undefined || attemptGeneration !== readyGeneration || attemptGeneration !== generation)
+            return false;
+        if (!attemptActive || launchRequested)
+            return false;
+        if (!backend || typeof backend.requestSessionLaunch !== "function")
+            return false;
+
+        launchRequested = true;
+        return backend.requestSessionLaunch(attemptGeneration) === true;
     }
 
     Connections {
@@ -125,6 +139,7 @@ Item {
             root.responseRequired = false;
             root.echoResponse = false;
             root.retryAfterFailure = true;
+            root.readyGeneration = 0;
             root.controller.rejectAuthentication(message);
         }
 
@@ -135,7 +150,14 @@ Item {
             root.responseRequired = false;
             root.echoResponse = false;
             root.retryAfterFailure = false;
+            root.readyGeneration = attemptGeneration;
             root.controller.completeAuthentication();
+        }
+
+        function onLaunched(attemptGeneration) {
+            if (!root.launchRequested || attemptGeneration !== root.readyGeneration)
+                return;
+            root.sessionLaunched(attemptGeneration);
         }
 
         function onBackendError(message, attemptGeneration) {
@@ -146,6 +168,7 @@ Item {
             root.responseRequired = false;
             root.echoResponse = false;
             root.retryAfterFailure = false;
+            root.readyGeneration = 0;
             root.controller.rejectAuthentication(message);
         }
     }

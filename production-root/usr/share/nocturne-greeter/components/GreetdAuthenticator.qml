@@ -5,7 +5,7 @@ Item {
     id: root
     visible: false
 
-    // Quickshell 0.3.1 exposes Greetd as a process-wide singleton. Tests may
+    // Quickshell 0.3.x exposes Greetd as a process-wide singleton. Tests may
     // replace it, while the production adapter defaults to the installed API.
     property var api: Greetd
     property bool active: false
@@ -17,8 +17,13 @@ Item {
     property string sessionId: ""
     property string promptText: "Enter your password"
     property bool echoResponse: false
+    // Fixed argv/environment allowlist supplied by an administratively owned
+    // SessionLaunchPolicy. Empty keeps every launch blocked.
+    property var launchCommand: []
+    property var launchEnvironment: []
+    property bool launchRequested: false
 
-    readonly property bool safeMode: true
+    readonly property bool safeMode: !launchPolicyValid()
 
     signal prompt(string message, bool responseRequired, bool echoResponse, int attemptGeneration)
     signal message(string message, bool error, int attemptGeneration)
@@ -26,6 +31,26 @@ Item {
     signal readyToLaunch(int attemptGeneration)
     signal backendError(string message, int attemptGeneration)
     signal launchBlocked(string message)
+    signal launched(int attemptGeneration)
+
+    function launchPolicyValid() {
+        const command = launchCommand;
+        if (!command || command.length === undefined || command.length === 0)
+            return false;
+        for (let i = 0; i < command.length; ++i) {
+            if (typeof command[i] !== "string" || command[i].length === 0 || command[i].indexOf("\0") !== -1)
+                return false;
+        }
+        if (command[0].charAt(0) !== "/")
+            return false;
+        const environment = launchEnvironment || [];
+        for (let j = 0; j < environment.length; ++j) {
+            const entry = environment[j];
+            if (typeof entry !== "string" || entry.indexOf("=") < 1 || entry.indexOf("\0") !== -1)
+                return false;
+        }
+        return true;
+    }
 
     function begin(user, session, attemptGeneration) {
         if (cancellationPoisoned) {
@@ -46,6 +71,7 @@ Item {
         }
 
         generation = attemptGeneration;
+        launchRequested = false;
         userId = user;
         sessionId = session || "";
         active = true;
@@ -88,9 +114,27 @@ Item {
         }
     }
 
-    function requestSessionLaunch() {
-        launchBlocked("Session launch is disabled in Nocturne Greeter 0.7");
-        return false;
+    // Called only through AuthenticatorBridge by SessionLaunchGate, after the
+    // black frame for this generation was presented. The command never comes
+    // from user, session label or desktop-file input.
+    function requestSessionLaunch(attemptGeneration) {
+        if (!launchPolicyValid()) {
+            launchBlocked("Session launch is disabled: no allowlisted command");
+            return false;
+        }
+        if (attemptGeneration === undefined || attemptGeneration !== generation || !active || !ready
+                || cancellationPoisoned || launchRequested) {
+            launchBlocked("Session launch refused for this attempt");
+            return false;
+        }
+        if (!api || !api.available || api.state !== GreetdState.ReadyToLaunch) {
+            launchBlocked("Greetd is not ready to launch");
+            return false;
+        }
+
+        launchRequested = true;
+        api.launch(launchCommand.slice(), (launchEnvironment || []).slice(), true);
+        return true;
     }
 
     Connections {
@@ -151,8 +195,14 @@ Item {
         }
 
         function onLaunched() {
-            // This adapter never requests launch(). Reaching this signal would
-            // mean another component bypassed the 0.7 launch barrier.
+            if (root.launchRequested && root.active && root.ready) {
+                root.active = false;
+                root.ready = false;
+                root.launched(root.generation);
+                return;
+            }
+            // A launch acknowledgement this adapter did not request means
+            // another component bypassed the launch barrier.
             root.active = false;
             root.ready = false;
             root.responseRequired = false;

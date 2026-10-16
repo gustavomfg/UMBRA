@@ -17,6 +17,7 @@ Item {
     signal failure(string message, int attemptGeneration)
     signal readyToLaunch(int attemptGeneration)
     signal backendError(string message, int attemptGeneration)
+    signal launched(int attemptGeneration)
 
     function begin(user, session, attemptGeneration) {
         void user;
@@ -66,8 +67,17 @@ Item {
         }
     }
 
-    function requestSessionLaunch() {
-        return false;
+    // Tests opt in; the isolated harness never launches anything.
+    property bool launchAccepted: false
+    property int launchRequests: 0
+    property int lastLaunchGeneration: 0
+
+    function requestSessionLaunch(attemptGeneration) {
+        if (!launchAccepted || attemptGeneration === undefined || attemptGeneration !== generation)
+            return false;
+        launchRequests += 1;
+        lastLaunchGeneration = attemptGeneration;
+        return true;
     }
 
     function disconnectBackend() {
