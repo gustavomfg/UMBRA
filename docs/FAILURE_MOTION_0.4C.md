@@ -57,7 +57,7 @@ O timer de shader continua em 16 ms. A amostra QSG do preview normal registrou m
 O snapshot hashado da Umbra 0.4b está em `backups/umbra-0.4b-before-failure-motion/` (69 arquivos). Para restaurá-lo:
 
 ```sh
-~/.config/nocturne-greeter/scripts/restore-umbra-0.4b.sh
+./scripts/restore-umbra-0.4b.sh
 ```
 
 O script valida o snapshot, restaura os arquivos do projeto e se remove depois do uso. Nenhum arquivo de display manager, PAM, boot ou serviço de login foi tocado.

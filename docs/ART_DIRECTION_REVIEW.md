@@ -99,7 +99,7 @@ Shader: idle ~8,3 Hz, AUTH estável ~15,4 Hz, demais fases ~30,3 Hz. Uniforms an
 Trocar o adaptador simulado por uma ponte de autenticação; implementar modelos reais e capacidades; testar falha, cancelamento e troca de sessão com o backend escolhido antes de qualquer implantação. Não houve alteração no login real.
 
 ```sh
-~/.config/nocturne-greeter/scripts/run-preview.sh
+./scripts/run-preview.sh
 ```
 
 Sair: Ctrl+Q. Falha simulada: Enter. Sucesso visual: Ctrl+Enter. Voltar ao idle: Escape.
@@ -107,7 +107,7 @@ Sair: Ctrl+Q. Falha simulada: Enter. Sucesso visual: Ctrl+Enter. Voltar ao idle:
 Restaurar a implementação da primeira passagem:
 
 ```sh
-~/.config/nocturne-greeter/scripts/restore-first-pass.sh
+./scripts/restore-first-pass.sh
 ```
 
 
@@ -146,8 +146,8 @@ Amostras locais em janela cheia 1920×1080, com quatro segundos de aquecimento e
 ## Preview e restauração
 
 ```sh
-~/.config/nocturne-greeter/scripts/run-preview.sh
-~/.config/nocturne-greeter/scripts/restore-umbra-approved.sh
+./scripts/run-preview.sh
+./scripts/restore-umbra-approved.sh
 ```
 
 Arquivos com alterações de implementação na fase 0.3: `components/AuthPanel.qml`, `components/GreeterWindow.qml`, `components/PreviewCapture.qml`, `tests/tst_greeter.qml` e `scripts/capture-preview.sh`. Documentação: `README.md` e este relatório. Novo restore/snapshot: `scripts/restore-umbra-approved.sh` e `backups/umbra-approved/`. O shader compilado final, a marca, a composição, o par tipográfico e os ícones são idênticos à Umbra aprovada.
