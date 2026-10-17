@@ -209,6 +209,9 @@ def cmd_start(args):
         argv += ["-loadvm", args.loadvm]
     if args.paused:
         argv += ["-S"]
+    if args.vnc:
+        # Local-only VNC (display :1 = TCP 5901) so a person can watch and type.
+        argv += ["-vnc", "127.0.0.1:1"]
     subprocess.run(argv, check=True)
     print("started")
 
@@ -367,6 +370,7 @@ def main():
     p.add_argument("--seed-url")
     p.add_argument("--loadvm")
     p.add_argument("--paused", action="store_true")
+    p.add_argument("--vnc", action="store_true", help="expose the screen on 127.0.0.1:5901")
     p.set_defaults(func=cmd_start)
 
     p = sub.add_parser("stop")
