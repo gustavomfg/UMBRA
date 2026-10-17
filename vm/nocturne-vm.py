@@ -177,6 +177,18 @@ def cmd_start(args):
     disk = VM_DIR / "disk.qcow2"
     if not disk.exists():
         sys.exit(f"missing {disk}")
+    pidfile = VM_DIR / "qemu.pid"
+    if pidfile.exists():
+        try:
+            pid = int(pidfile.read_text().strip())
+            os.kill(pid, 0)
+        except (ValueError, ProcessLookupError):
+            pass
+        except PermissionError:
+            sys.exit(f"a VM process (pid {pid}) is already running; stop it first")
+        else:
+            sys.exit(f"a VM process (pid {pid}) is already running; stop it first")
+    # Only remove stale sockets once no VM can still be listening on them.
     for sock in (QMP_SOCK, QGA_SOCK):
         if sock.exists():
             sock.unlink()
