@@ -1,4 +1,4 @@
-# Nocturne Greeter — Umbra 0.8
+# Nocturne Greeter — Umbra 0.9
 
 Preview em Quickshell/QML + GLSL: um corpo obsidiano com matéria orbital, identidade de eclipse e autenticação em uma coluna editorial. O preview executa dentro da sessão atual. A fase 0.8 provou o login real (greetd + PAM + sessão Wayland + boot) **somente dentro de uma VM descartável**; nesta máquina nada altera display manager, PAM, boot ou serviços de login.
 
@@ -56,10 +56,13 @@ NOCTURNE_DEBUG=1 ./scripts/run-preview.sh
 | `components/AuthenticatorBridge.qml` | Fronteira entre state machine e backend |
 | `components/GreetdAuthenticator.qml` | Adapter para `Quickshell.Services.Greetd`; `launch()` só com argv fixo da política e geração pronta |
 | `components/SessionLaunchGate.qml` | Libera o lançamento só após o quadro preto ser apresentado (`wp_presentation`) |
-| `components/SessionLaunchPolicy.qml` | Política administrativa; o padrão não tem usuário nem comando, então bloqueia todo lançamento |
+| `components/SessionLaunchPolicy.qml` | Política administrativa: arquivos de usuários, catálogo de sessões, estado e comandos de energia |
+| `components/GreeterCatalog.qml`, `greeter-model.js` | Usuários (`/etc/passwd` + `login.defs`), sessões do catálogo, última escolha |
+| `system/` | Gerador do catálogo, verificação do módulo, hooks do pacman, tmpfiles, config/drop-in do greetd |
+| `packaging/arch/` | PKGBUILD local (`makepkg -si`) |
 | `greeter/shell.qml` | Entrada pré-login para greetd (sem preview, captura, debug ou mock) |
 | `presentation/` | Módulo C++ `Nocturne.Presentation` (`PresentationProbe`) |
-| `vm/` | Controle da VM descartável (`nocturne-vm.py`) e política exclusiva da VM |
+| `vm/` | Controle da VM descartável (`nocturne-vm.py`) e instalação do pacote no guest |
 | `components/PreviewCapture.qml` | Captura opt-in, ausente do fluxo normal |
 | `shaders/pulse.frag`, `.qsb` | Esfera e planos orbitais analíticos; pacote Qt |
 | `assets/` | Marca e ícones SVG próprios |
@@ -95,6 +98,7 @@ O último comando executa o módulo Greetd instalado contra um socket fixture lo
 ./scripts/build-presentation-probe.sh
 ./scripts/test-greetd-adapter.sh
 ./scripts/test-launch-gate-e2e.sh            # e --no-probe: o lançamento precisa ficar bloqueado
+python3 -m unittest tests/test_sessions_catalog.py
 ```
 
 Os testes Qt Quick offscreen verificam estados, teclado, clique/foco e submissão. Não substituem avaliação visual.
@@ -125,8 +129,12 @@ O primeiro histórico público descreve o estado atual Umbra 0.6 em commits tem�
 
 ## Fronteira de autenticação e lançamento
 
-`AuthenticatorBridge` normaliza mock e `GreetdAuthenticator`, incluindo prompt secreto/visível, mensagens, cancelamento e geração por tentativa. Depois de `readyToLaunch`, o SUCCESS termina, uma cena preta opaca cobre a janela e `SessionLaunchGate` arma `wp_presentation_feedback` na superfície exata do Umbra. Só o evento `presented` para esse commit libera `Greetd.launch(argv fixo, env, quit=true)`, uma única vez. Sem o módulo, com `discarded` ou timeout, o lançamento fica bloqueado e o greeter reinicia. O argv vem apenas de `SessionLaunchPolicy.qml`, nunca do usuário, rótulo ou `.desktop`. Veja [o relatório 0.7](docs/GREETD_PROTOCOL_0.7.md) para a API.
+`AuthenticatorBridge` normaliza mock e `GreetdAuthenticator`, incluindo prompt secreto/visível, mensagens, cancelamento e geração por tentativa. Depois de `readyToLaunch`, o SUCCESS termina, uma cena preta opaca cobre a janela e `SessionLaunchGate` arma `wp_presentation_feedback` na superfície exata do Umbra. Só o evento `presented` para esse commit libera `Greetd.launch(argv fixo, env, quit=true)`, uma única vez. Sem o módulo, com `discarded` ou timeout, o lançamento fica bloqueado e o greeter reinicia. O argv vem apenas do catálogo `/var/lib/nocturne-greeter/sessions.json`, gerado por root a partir de `/usr/share/wayland-sessions`; o greeter nunca interpreta `.desktop`, PATH ou entrada do usuário. Veja [o relatório 0.7](docs/GREETD_PROTOCOL_0.7.md) para a API.
 
 ## Real login 0.8 — provado em VM
 
 Resultados, inventário, matriz de falhas e limites em [REAL_LOGIN_VM_0.8.md](docs/REAL_LOGIN_VM_0.8.md). Numa VM Arch descartável (QEMU/KVM sem privilégios no host), o Umbra rodou como greeter real via greetd + Cage, autenticou com o PAM empacotado, apresentou o quadro preto antes de lançar uma sessão Wayland de teste, fez três ciclos de logout e dois boots. O host não foi alterado. GPU física, multi-monitor e PLM continuam não testados.
+
+## 0.9 — usuários, sessões, energia e pacote
+
+Seleção de usuário e sessão (Hyprland, Hyprland via uwsm, Plasma), memória da última escolha, Suspender/Reiniciar/Desligar e um PKGBUILD local, tudo provado na VM. Para instalar neste computador siga o roteiro em [INSTALL_0.9.md](docs/INSTALL_0.9.md); o pacote não habilita o greetd sozinho.

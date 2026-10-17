@@ -1,5 +1,9 @@
 # Nocturne Greeter 0.8 — Real Login Integration in VM
 
+> 0.9 replaced the hand installer (`scripts/stage-vm-greeter.sh`) and the
+> fixed VM policy with the package and `vm/install-package-in-guest.sh`; see
+> [INSTALL_0.9.md](INSTALL_0.9.md). This report keeps the 0.8 record.
+
 **STATUS: PROVEN IN A DISPOSABLE VM** (real greetd + PAM + session launch)
 
 **Last checked:** 2026-10-16
