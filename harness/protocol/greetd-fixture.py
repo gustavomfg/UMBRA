@@ -27,6 +27,7 @@ class FixtureServer:
             "start_session": 0,
         }
         self.start_session_cmd = None
+        self.start_session_env = None
 
     def write_status(self):
         if not self.status_path:
@@ -36,6 +37,8 @@ class FixtureServer:
             status = dict(self.counts)
             if self.start_session_cmd is not None:
                 status["start_session_cmd"] = self.start_session_cmd
+            if self.start_session_env is not None:
+                status["start_session_env"] = self.start_session_env
             json.dump(status, status_file, sort_keys=True)
             status_file.write("\n")
         os.replace(temporary, self.status_path)
@@ -160,6 +163,9 @@ class FixtureServer:
                 cmd = request.get("cmd")
                 if isinstance(cmd, list) and all(isinstance(part, str) for part in cmd):
                     self.start_session_cmd = cmd
+                env = request.get("env")
+                if isinstance(env, list) and all(isinstance(part, str) for part in env):
+                    self.start_session_env = env
                 self.stage = "terminal"
                 self.write_status()
                 self.send(connection, {"type": "success"})

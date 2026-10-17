@@ -27,12 +27,14 @@ common_components=(
     ClockDisplay.qml
     CosmicScene.qml
     GreetdAuthenticator.qml
+    GreeterCatalog.qml
     GreeterController.qml
     GreeterWindow.qml
     IconButton.qml
     SessionLaunchGate.qml
     SessionLaunchPolicy.qml
     SystemChrome.qml
+    greeter-model.js
 )
 for component in "${common_components[@]}"; do
     if [[ -L "$project_root/components/$component" ]]; then

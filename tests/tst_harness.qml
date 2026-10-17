@@ -191,6 +191,17 @@ TestCase {
         verify(boundary.responseRequired);
     }
 
+    function test_multiPartPamNoticeAndPromptLabel() {
+        backend.scenario = "faillock-messages";
+        controller.wake();
+        compare(controller.statusMessage, "The account is locked due to 3 failed logins. (10 minutes left to unlock)");
+        verify(controller.statusMessageVisible);
+        compare(boundary.promptText, "Enter your password");
+        authPanel.inputField.text = "dummy";
+        authPanel.submit();
+        compare(boundary.messageBuffer, "");
+    }
+
     function test_lateCallbackAfterCancelCannotAffectNewAttempt() {
         backend.scenario = "late-response-after-cancel";
         controller.wake();

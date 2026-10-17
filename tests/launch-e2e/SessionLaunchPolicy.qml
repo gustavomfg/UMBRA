@@ -1,12 +1,15 @@
 import QtQuick
 
-// Fixture policy for the launch-gate end-to-end test. The protocol fixture
-// acknowledges this argv without executing it.
+// Fixture policy for the launch-gate end-to-end test. @RUN@ is replaced with
+// the temporary run directory; the protocol fixture acknowledges the session
+// argv without executing it.
 QtObject {
-    readonly property string userId: "launch-fixture"
-    readonly property string displayName: "Launch Fixture"
-    readonly property string hostname: "Fixture host"
-    readonly property string sessionLabel: "Fixture session"
-    readonly property var command: ["/usr/bin/false", "nocturne-fixture-session"]
-    readonly property var environment: ["XDG_SESSION_TYPE=wayland"]
+    readonly property string passwdFile: "@RUN@/fixture/passwd"
+    readonly property string loginDefsFile: "@RUN@/fixture/login.defs"
+    readonly property string hostnameFile: "@RUN@/fixture/hostname"
+    readonly property string sessionsFile: "@RUN@/fixture/sessions.json"
+    readonly property string stateFile: "@RUN@/fixture/state.json"
+    readonly property string fallbackHostname: "Fixture host"
+    readonly property bool powerActionsEnabled: false
+    readonly property var powerCommands: ({})
 }

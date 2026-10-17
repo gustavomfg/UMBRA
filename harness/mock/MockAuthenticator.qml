@@ -31,12 +31,16 @@ Item {
             message("Touch your security key", false, generation);
         else if (scenario === "error-message")
             message("Security key not detected", true, generation);
+        else if (scenario === "faillock-messages") {
+            message("The account is locked due to 3 failed logins.", false, generation);
+            message("(10 minutes left to unlock)", false, generation);
+        }
 
         promptCount = 1;
         if (scenario === "visible-prompt")
             prompt("Enter one-time code", true, true, generation);
         else
-            prompt("Enter your password", true, false, generation);
+            prompt(scenario === "faillock-messages" ? "Password: " : "Enter your password", true, false, generation);
         responseRequired = true;
         return true;
     }

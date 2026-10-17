@@ -8,7 +8,7 @@ run_root="$(mktemp -d "${TMPDIR:-/tmp}/nocturne-greetd-adapter.XXXXXX")"
 trap 'rm -r -- "$run_root"' EXIT
 
 mkdir "$run_root/components"
-cp -- "$project_root/components/"*.qml "$run_root/components/"
+cp -- "$project_root/components/"*.qml "$project_root/components/"*.js "$run_root/components/"
 cp -- "$project_root/tests/greetd-adapter/shell.qml" "$run_root/shell.qml"
 
 output="$(env -u GREETD_SOCK QT_QPA_PLATFORM=offscreen timeout 20 quickshell --no-duplicate -p "$run_root" 2>&1)" && status=0 || status=$?

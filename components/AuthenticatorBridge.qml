@@ -1,4 +1,5 @@
 import QtQuick
+import "greeter-model.js" as Model
 
 Item {
     id: root
@@ -18,6 +19,10 @@ Item {
     // Generation that reached readyToLaunch; 0 when no attempt is ready.
     property int readyGeneration: 0
     property bool launchRequested: false
+    // PAM messages received since the last response; shown together so a
+    // multi-part notice (e.g. faillock's reason and remaining time) survives.
+    property string messageBuffer: ""
+    property bool messageBufferIsError: false
 
     signal sessionLaunched(int attemptGeneration)
 
@@ -39,6 +44,8 @@ Item {
         retryAfterFailure = false;
         readyGeneration = 0;
         launchRequested = false;
+        messageBuffer = "";
+        messageBufferIsError = false;
 
         const started = backend.begin(userId, selectedSession, thisGeneration);
         if (started === false && generation === thisGeneration) {
@@ -102,6 +109,8 @@ Item {
                 return;
 
             const thisGeneration = root.generation;
+            root.messageBuffer = "";
+            root.messageBufferIsError = false;
             root.responseRequired = false;
             root.echoResponse = false;
             root.backend.respond(response, thisGeneration);
@@ -118,17 +127,19 @@ Item {
             if (!responseRequired)
                 return;
 
-            root.promptText = message;
+            root.promptText = Model.displayPrompt(message);
             root.responseRequired = true;
             root.echoResponse = echoResponse;
             root.promptSerial += 1;
-            root.controller.presentPrompt(message, true, echoResponse);
+            root.controller.presentPrompt(root.promptText, true, echoResponse);
         }
 
         function onMessage(message, error, attemptGeneration) {
             if (!root.attemptActive || attemptGeneration !== root.generation)
                 return;
-            root.controller.presentMessage(message, error);
+            root.messageBuffer = root.messageBuffer.length > 0 ? root.messageBuffer + " " + message : message;
+            root.messageBufferIsError = root.messageBufferIsError || error;
+            root.controller.presentMessage(root.messageBuffer, root.messageBufferIsError);
         }
 
         function onFailure(message, attemptGeneration) {

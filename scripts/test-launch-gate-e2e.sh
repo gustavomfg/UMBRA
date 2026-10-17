@@ -27,13 +27,32 @@ cleanup() {
         kill -TERM "$fixture_pid" 2>/dev/null || true
         wait "$fixture_pid" 2>/dev/null || true
     fi
-    rm -r -- "$run_root"
+    if [[ -z "${KEEP_E2E:-}" ]]; then rm -r -- "$run_root"; else printf "kept %s\n" "$run_root"; fi
 }
 trap cleanup EXIT
 
 mkdir -m 700 "$run_root/runtime" "$run_root/stage" "$run_root/stage/components"
-cp -- "$project_root/components/"*.qml "$run_root/stage/components/"
-cp -- "$project_root/tests/launch-e2e/SessionLaunchPolicy.qml" "$run_root/stage/components/SessionLaunchPolicy.qml"
+cp -- "$project_root/components/"*.qml "$project_root/components/"*.js "$run_root/stage/components/"
+sed "s|@RUN@|$run_root|g" "$project_root/tests/launch-e2e/SessionLaunchPolicy.qml" > "$run_root/stage/components/SessionLaunchPolicy.qml"
+mkdir -m 700 "$run_root/fixture"
+cat > "$run_root/fixture/passwd" <<'PASSWD'
+root:x:0:0::/root:/bin/bash
+greeter:x:967:967:greetd greeter user:/:/bin/bash
+nobody:x:65534:65534:Kernel Overflow User:/:/usr/bin/nologin
+service:x:1001:1001::/var/empty:/usr/bin/nologin
+launch-fixture:x:1000:1000:Launch Fixture:/home/launch-fixture:/bin/bash
+second-fixture:x:1002:1002::/home/second-fixture:/bin/bash
+PASSWD
+printf 'UID_MIN 1000\nUID_MAX 60000\n' > "$run_root/fixture/login.defs"
+printf 'fixture-host\n' > "$run_root/fixture/hostname"
+cat > "$run_root/fixture/sessions.json" <<'JSON'
+{"version": 1, "sessions": [
+  {"id": "alpha", "name": "Alpha", "command": ["/usr/bin/true"], "desktopNames": ["Alpha"], "type": "wayland"},
+  {"id": "fixture-session", "name": "Fixture session", "command": ["/usr/bin/false", "nocturne-fixture-session"], "desktopNames": ["Fixture", "Nocturne"], "type": "wayland"}
+]}
+JSON
+# Last selection picks the second session; the default user is the first.
+printf '{"version": 1, "user": "launch-fixture", "session": "fixture-session"}\n' > "$run_root/fixture/state.json"
 cp -- "$project_root/tests/launch-e2e/E2EDriver.qml" "$run_root/stage/E2EDriver.qml"
 cp -a -- "$project_root/assets" "$project_root/shaders" "$run_root/stage/"
 # Inject the driver as the last child of ShellRoot.
@@ -80,7 +99,7 @@ if grep -q 'fixture-response' "$run_root/greeter.log"; then
     exit 1
 fi
 
-python3 - "$status_file" "$run_root/greeter.log" "$with_probe" "$kwin_status" <<'PY'
+python3 - "$status_file" "$run_root/greeter.log" "$with_probe" "$kwin_status" "$run_root/fixture/state.json" <<'PY'
 import json, re, sys
 
 status = json.load(open(sys.argv[1], encoding="utf-8"))
@@ -97,7 +116,13 @@ if with_probe:
     if status.get("start_session") != 1:
         raise SystemExit("FAIL: expected exactly one start_session")
     if status.get("start_session_cmd") != ["/usr/bin/false", "nocturne-fixture-session"]:
-        raise SystemExit("FAIL: start_session argv was not the fixed policy argv")
+        raise SystemExit("FAIL: start_session argv was not the selected catalog session")
+    expected_env = ["XDG_SESSION_TYPE=wayland", "XDG_SESSION_DESKTOP=fixture-session", "XDG_CURRENT_DESKTOP=Fixture:Nocturne"]
+    if status.get("start_session_env") != expected_env:
+        raise SystemExit("FAIL: unexpected session environment: %r" % status.get("start_session_env"))
+    state = json.load(open(sys.argv[5], encoding="utf-8"))
+    if state.get("user") != "launch-fixture" or state.get("session") != "fixture-session":
+        raise SystemExit("FAIL: last selection was not saved: %r" % state)
     if sys.argv[4] == "124":
         raise SystemExit("FAIL: Quickshell did not exit after the launch acknowledgement")
     print("PASS: black frame presented before the single allowlisted launch request; Quickshell exited.")
