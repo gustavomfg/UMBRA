@@ -229,9 +229,22 @@ def cmd_start(args):
 
 
 def cmd_stop(args):
-    qmp = Qmp()
-    qmp.call("quit" if args.force else "system_powerdown")
-    print("stop requested")
+    if args.force:
+        Qmp().call("quit")
+        print("VM process stopped")
+        return
+    # Prefer an orderly guest shutdown; the ACPI button can be ignored.
+    try:
+        qga = Qga(timeout=5)
+        payload = {"execute": "guest-shutdown", "arguments": {"mode": "powerdown"}}
+        qga.file.write(json.dumps(payload).encode() + b"\n")
+        qga.file.flush()
+        print("guest shutdown requested")
+        return
+    except (OSError, ConnectionError, TimeoutError, json.JSONDecodeError):
+        pass
+    Qmp().call("system_powerdown")
+    print("ACPI power button pressed")
 
 
 def cmd_qmp(args):
