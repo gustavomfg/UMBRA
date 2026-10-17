@@ -6,8 +6,9 @@ set -euo pipefail
 
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 source_dir="$project_root/presentation"
-build_dir="$project_root/build/presentation"
-module_dir="$project_root/build/qml/Nocturne/Presentation"
+build_root="${NOCTURNE_BUILD_DIR:-$project_root/build}"
+build_dir="$build_root/presentation"
+module_dir="$build_root/qml/Nocturne/Presentation"
 protocol_xml="${PRESENTATION_TIME_XML:-/usr/share/wayland-protocols/stable/presentation-time/presentation-time.xml}"
 moc="${QT_MOC:-/usr/lib/qt6/moc}"
 qt_version="$(pkg-config --modversion Qt6Gui)"

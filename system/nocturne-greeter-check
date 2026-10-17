@@ -1,0 +1,27 @@
+#!/bin/bash
+# Verifies that Nocturne.Presentation loads with the installed Qt. Without it
+# the greeter blocks every session launch (fail closed), so warn loudly.
+set -u
+probe_qml="$(mktemp --suffix=.qml)"
+trap 'rm -f -- "$probe_qml"' EXIT
+cat > "$probe_qml" <<'QML'
+import QtQuick
+import Nocturne.Presentation
+Item {
+    PresentationProbe { id: probe }
+    Component.onCompleted: Qt.quit()
+}
+QML
+if output="$(QT_QPA_PLATFORM=offscreen timeout 20 /usr/lib/qt6/bin/qml "$probe_qml" 2>&1)" \
+    && ! grep -qiE 'not installed|cannot load|failed|is not a type' <<< "$output"; then
+    echo "nocturne-greeter: presentation module OK"
+    exit 0
+fi
+cat >&2 <<'MSG'
+==> WARNING: nocturne-greeter's presentation module no longer loads with the
+==> installed Qt/Quickshell. The greeter will refuse to start sessions until
+==> the nocturne-greeter package is rebuilt and reinstalled (makepkg -si).
+==> Use another TTY (Ctrl+Alt+F3) to log in meanwhile.
+MSG
+printf '%s\n' "$output" | tail -5 >&2
+exit 0

@@ -1,0 +1,13 @@
+[Trigger]
+Type = Path
+Operation = Install
+Operation = Upgrade
+Operation = Remove
+Target = usr/share/wayland-sessions/*.desktop
+Target = usr/bin/*
+Target = usr/lib/nocturne-greeter/nocturne-greeter-sessions
+
+[Action]
+Description = Updating the Nocturne greeter session catalog...
+When = PostTransaction
+Exec = /usr/lib/nocturne-greeter/nocturne-greeter-sessions

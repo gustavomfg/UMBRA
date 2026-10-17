@@ -1,0 +1,24 @@
+post_install() {
+    cat <<'MSG'
+==> nocturne-greeter installed. greetd is NOT enabled by this package.
+==> Test first from a text console (Ctrl+Alt+F3, log in), keeping your
+==> current display manager installed:
+==>     sudo systemctl start greetd
+==> Return with Ctrl+Alt+F3 and `sudo systemctl stop greetd` if anything is wrong.
+==> When it works, switch the boot display manager:
+==>     sudo systemctl disable <current-dm> && sudo systemctl enable greetd
+MSG
+}
+
+post_upgrade() {
+    systemctl daemon-reload >/dev/null 2>&1 || true
+}
+
+post_remove() {
+    systemctl daemon-reload >/dev/null 2>&1 || true
+    cat <<'MSG'
+==> nocturne-greeter removed. greetd now uses /etc/greetd/config.toml again.
+==> If greetd was your display manager, re-enable your previous one, e.g.:
+==>     sudo systemctl disable greetd && sudo systemctl enable plasmalogin
+MSG
+}
