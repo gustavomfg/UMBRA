@@ -28,7 +28,8 @@ Item {
     readonly property string selectedUserName: selectedUser ? selectedUser.displayName : "No user available"
     readonly property string selectedSessionId: selectedSession ? selectedSession.id : ""
     readonly property string selectedSessionName: selectedSession ? selectedSession.name : "No session available"
-    readonly property var launchCommand: selectedSession ? selectedSession.command : []
+    property var sessionCommandPrefix: []
+    readonly property var launchCommand: Model.sessionCommand(selectedSession, sessionCommandPrefix)
     readonly property var launchEnvironment: Model.sessionEnvironment(selectedSession)
 
     function readText(view) {

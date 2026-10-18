@@ -10,6 +10,7 @@ QtObject {
     readonly property string sessionsFile: "@RUN@/fixture/sessions.json"
     readonly property string stateFile: "@RUN@/fixture/state.json"
     readonly property string fallbackHostname: "Fixture host"
+    readonly property var sessionCommandPrefix: []
     readonly property bool powerActionsEnabled: false
     readonly property var powerCommands: ({})
 }

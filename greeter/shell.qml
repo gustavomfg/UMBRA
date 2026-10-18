@@ -47,6 +47,7 @@ ShellRoot {
         sessionsFile: policy.sessionsFile
         stateFile: policy.stateFile
         fallbackHostname: policy.fallbackHostname
+        sessionCommandPrefix: policy.sessionCommandPrefix
     }
 
     // Pre-login has no user services: only the selected session is shown.

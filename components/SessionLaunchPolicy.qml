@@ -13,6 +13,9 @@ QtObject {
     // Writable only by the greeter account (systemd-tmpfiles).
     readonly property string stateFile: "/var/lib/nocturne-greeter/state/last-selection.json"
     readonly property string fallbackHostname: "Local system"
+    // Session stdout/stderr go to the journal (journalctl -t nocturne-session)
+    // instead of the VT shown between the greeter and the compositor.
+    readonly property var sessionCommandPrefix: ["/usr/bin/systemd-cat", "--identifier=nocturne-session", "--"]
     // logind allows the active seat session to suspend, reboot and power off.
     readonly property bool powerActionsEnabled: true
     readonly property var powerCommands: ({

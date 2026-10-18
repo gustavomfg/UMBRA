@@ -64,6 +64,14 @@ TestCase {
         compare(Model.sessionEnvironment(null), []);
     }
 
+    function test_sessionCommandPrefix() {
+        const session = { id: "hyprland-uwsm", command: ["/usr/bin/uwsm", "start", "hyprland.desktop"] };
+        compare(Model.sessionCommand(session, ["/usr/bin/systemd-cat", "--identifier=nocturne-session", "--"]),
+                ["/usr/bin/systemd-cat", "--identifier=nocturne-session", "--", "/usr/bin/uwsm", "start", "hyprland.desktop"]);
+        compare(Model.sessionCommand(session, []), session.command);
+        compare(Model.sessionCommand(null, ["/usr/bin/systemd-cat"]), []);
+    }
+
     function test_stateRoundTripAndRejection() {
         compare(Model.parseState(Model.serializeState("alice", "hyprland-uwsm")), { user: "alice", session: "hyprland-uwsm" });
         compare(Model.parseState('{"user": "../../etc", "session": "a b"}'), { user: "", session: "" });

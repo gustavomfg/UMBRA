@@ -11,6 +11,7 @@ the owner and is described in the runbook below.
 | Users | `/etc/passwd` within `UID_MIN..UID_MAX` from `/etc/login.defs`, login shells only, GECOS display name. User menu in the chrome while idle. |
 | Sessions | `nocturne-greeter-sessions` (root) parses `/usr/share/wayland-sessions/*.desktop` without a shell, drops field codes, rejects unquoted shell syntax, resolves `Exec`/`TryExec` to root-owned, non-writable executables and writes `/var/lib/nocturne-greeter/sessions.json`. The greeter only reads that catalog. A pacman hook refreshes it. |
 | Launch | `Greetd.launch(argv, env)` uses the selected catalog entry; env is `XDG_SESSION_TYPE=wayland`, `XDG_SESSION_DESKTOP=<id>`, `XDG_CURRENT_DESKTOP=<DesktopNames>`. Still gated on the presented black frame. |
+| Session output | The launch argv is prefixed with `/usr/bin/systemd-cat --identifier=nocturne-session --`, so launcher output (uwsm's unit summary, `start-hyprland`) goes to `journalctl -t nocturne-session` instead of flashing on VT1 before the compositor takes over. |
 | Memory | Last user and session in `/var/lib/nocturne-greeter/state/last-selection.json` (owned by `greeter`, 0700 directory), saved before launch. |
 | Power | Sleep, Restart, Shut down run `systemctl suspend/reboot/poweroff`; logind allows the active greeter session without extra polkit rules. |
 | UX | Space only wakes (other printable keys still start typing). PAM's generic `Password:` is shown as "Enter your password". Multi-part PAM notices are joined (faillock shows reason and remaining time). Administrative notices when there are no users, no sessions or no presentation module. |
@@ -104,6 +105,7 @@ On **Ctrl+Alt+F3**:
 ```sh
 journalctl -b -t nocturne-greeter | tail -50
 journalctl -b -u greetd | tail -20
+journalctl -b -t nocturne-session | tail -20   # session launcher output
 ```
 
 Your monitor is on the NVIDIA card. If wlroots picked the iGPU, pin it in

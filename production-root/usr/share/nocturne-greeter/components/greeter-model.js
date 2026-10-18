@@ -111,6 +111,14 @@ function sessionEnvironment(session) {
     return environment;
 }
 
+// The session's stdio is the VT; a root-owned prefix (systemd-cat) keeps
+// launcher output such as uwsm's unit summary off the screen.
+function sessionCommand(session, prefix) {
+    if (!session || !session.command || session.command.length === 0)
+        return [];
+    return (prefix || []).concat(session.command);
+}
+
 function parseState(text) {
     try {
         const data = JSON.parse(text || "");
