@@ -1,5 +1,7 @@
 # Nocturne Greeter — Umbra 0.9
 
+Português (Brasil) · [English](README.en.md)
+
 Greeter para sessões Wayland, construído com **Quickshell, QML e GLSL** e integrado ao **greetd + PAM**. A interface combina um corpo obsidiano, matéria orbital animada e uma tela de autenticação minimalista.
 
 **Pronto para uso no Arch Linux.** A versão `0.9.0-2` está instalada e em uso no sistema do autor, após validação de login real, sessões, energia e boot em uma VM descartável.
