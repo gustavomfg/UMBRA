@@ -1,8 +1,10 @@
 # Nocturne Greeter 0.9 — Users, sessions, package and host install
 
-**Status:** items 1–4 implemented and proven in the disposable VM
-(2026-10-17). Item 5, installing on the real workstation, is a manual step for
-the owner and is described in the runbook below.
+**Status:** ready for use on Arch Linux. Items 1–4 were implemented and
+proven in the disposable VM (2026-10-17). As of 2026-10-18, the owner confirms
+use on the real workstation; package `0.9.0-2` is installed and
+`greetd.service` is active. The installation and recovery runbook remains
+below for reference.
 
 ## What changed since 0.8
 
@@ -53,8 +55,9 @@ guard 11/11; nine protocol fixture scenarios; qmllint.
 
 ## Known limits
 
-- Not yet run on the workstation: NVIDIA RTX 4060 (monitor on `card1`,
-  `DP-1`) plus AMD Renoir iGPU (`card0`), physical seat, your keyboard layout.
+- The owner now uses the greeter on the real workstation. This confirms
+  use on that system; other GPU, multi-monitor and keyboard configurations
+  still require their own validation.
 - X11 sessions are not offered (`/usr/share/xsessions` is ignored).
 - In the VM the shader costs ≈ 1.7 cores (llvmpipe); not measured on the GPU.
 - After a Quickshell crash, launch is delayed ≈ 5 s (crash helper).
