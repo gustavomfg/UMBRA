@@ -15,6 +15,7 @@ Item {
     signal failure(string message, int attemptGeneration)
     signal readyToLaunch(int attemptGeneration)
     signal backendError(string message, int attemptGeneration)
+    signal launched(int attemptGeneration)
 
     function begin(user, session, attemptGeneration) {
         void user;

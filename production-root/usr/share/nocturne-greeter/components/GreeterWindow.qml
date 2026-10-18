@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
+import "greeter-model.js" as Model
 
 FloatingWindow {
     id: window
@@ -21,10 +22,24 @@ FloatingWindow {
     property string sessionContextText: "Selected session"
     property string powerUnavailableText: "Unavailable"
     property string windowTitle: "Nocturne Umbra"
+    property var sessionOptions: []
+    property int selectedSessionIndex: -1
+    property var userOptions: []
+    property int selectedUserIndex: -1
+    property bool powerActionsEnabled: false
+    // Administrative notice (no sessions, no users, launch module missing).
+    property string noticeText: ""
+    signal sessionChosen(int index)
+    signal userChosen(int index)
+    signal powerActionRequested(string action)
     readonly property alias controller: greeterController
     readonly property alias captureTarget: canvas
     readonly property alias authPanel: loginPanel
     readonly property alias chrome: systemChrome
+    // The QQuickWindow behind this Quickshell window; the launch gate attaches
+    // presentation feedback to its wl_surface.
+    readonly property var presentationWindow: canvas.Window.window
+    readonly property bool blackHeld: blackHold.visible
     implicitWidth: windowedPreview ? requestedWidth : (primaryScreen ? primaryScreen.width : 1920)
     implicitHeight: windowedPreview ? requestedHeight : (primaryScreen ? primaryScreen.height : 1080)
     screen: primaryScreen
@@ -65,7 +80,8 @@ FloatingWindow {
             }
             if (greeterController.isIdle && event.key !== Qt.Key_Tab && event.key !== Qt.Key_Backtab) {
                 const commandModifier = event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier);
-                const initialText = !commandModifier && event.text.length > 0 && event.text.charCodeAt(0) >= 32 ? event.text : "";
+                // Space only wakes; other printable keys start the response.
+                const initialText = Model.wakeSeedText(event.text, commandModifier !== 0);
                 loginPanel.wakeWithInitialText(initialText);
                 event.accepted = true;
             }
@@ -205,8 +221,46 @@ FloatingWindow {
             batteryAvailable: window.statusModel ? window.statusModel.batteryAvailable : false
             batteryPercent: window.statusModel ? window.statusModel.batteryPercent : 0
             controller: greeterController
+            sessionOptions: window.sessionOptions
+            selectedSessionIndex: window.selectedSessionIndex
+            userOptions: window.userOptions
+            selectedUserIndex: window.selectedUserIndex
+            userSelectionEnabled: greeterController.isIdle
+            powerActionsEnabled: window.powerActionsEnabled
+            onSessionChosen: index => window.sessionChosen(index)
+            onUserChosen: index => window.userChosen(index)
+            onPowerActionRequested: action => window.powerActionRequested(action)
             opacity: window.successPresence(.30, .78, greeterController.successProgress)
             enabled: greeterController.phase !== GreeterController.Success
+        }
+        Text {
+            objectName: "noticeText"
+            visible: window.noticeText.length > 0
+            x: window.edgeMargin
+            width: canvas.width - window.edgeMargin * 2
+            y: systemChrome.y - height - 14 * window.uiScale
+            wrapMode: Text.WordWrap
+            textFormat: Text.PlainText
+            text: window.noticeText
+            color: "#A78BFA"
+            opacity: window.successPresence(.05, .50, greeterController.successProgress)
+            font.family: "Adwaita Sans"
+            font.pixelSize: 12 * window.uiScale
+        }
+        Rectangle {
+            id: blackHold
+            // Immutable opaque black scene after SUCCESS. Nothing from the
+            // previous frame can show through while the launch gate runs.
+            anchors.fill: parent
+            z: 1000
+            color: "#000000"
+            visible: greeterController.successComplete
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.AllButtons
+                hoverEnabled: true
+                cursorShape: Qt.BlankCursor
+            }
         }
         Text {
             visible: window.debugMode

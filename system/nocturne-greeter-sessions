@@ -1,0 +1,261 @@
+#!/usr/bin/python3 -I
+"""Build the root-owned Wayland session catalog read by the Nocturne greeter.
+
+Runs as root (package install and pacman hook). Parses
+/usr/share/wayland-sessions/*.desktop without a shell, resolves each Exec
+command to an absolute, root-owned, non-writable executable, and writes a
+JSON catalog atomically. The greeter never parses desktop files or PATH.
+
+    nocturne-greeter-sessions [--sessions-dir DIR] [--output FILE] [--check]
+"""
+
+import argparse
+import json
+import os
+import stat
+import sys
+import tempfile
+from pathlib import Path
+
+DEFAULT_SESSIONS_DIR = "/usr/share/wayland-sessions"
+DEFAULT_OUTPUT = "/var/lib/nocturne-greeter/sessions.json"
+SEARCH_PATH = ("/usr/local/sbin", "/usr/local/bin", "/usr/bin")
+MAX_FILE_SIZE = 64 * 1024
+FIELD_CODES = set("fFuUdDnNickvm")
+RESERVED_IN_QUOTES = {'"', "`", "$", "\\"}
+
+
+class DesktopEntryError(ValueError):
+    pass
+
+
+def parse_desktop_entry(text):
+    """Return the [Desktop Entry] group as a dict of unlocalised keys."""
+    group = None
+    entry = {}
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("[") and line.endswith("]"):
+            group = line[1:-1]
+            continue
+        if group != "Desktop Entry" or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if "[" in key:
+            continue  # localised variants are not used
+        entry.setdefault(key, value.strip())
+    return entry
+
+
+def unescape_string(value):
+    """Desktop-entry `string` escapes: \\s \\n \\t \\r \\\\ (and \\; is kept)."""
+    out = []
+    i = 0
+    while i < len(value):
+        char = value[i]
+        if char == "\\" and i + 1 < len(value):
+            following = value[i + 1]
+            mapped = {"s": " ", "n": "\n", "t": "\t", "r": "\r", "\\": "\\"}.get(following)
+            if mapped is not None:
+                out.append(mapped)
+                i += 2
+                continue
+        out.append(char)
+        i += 1
+    return "".join(out)
+
+
+def split_exec(value):
+    """Tokenise an Exec value per the Desktop Entry spec and drop field codes."""
+    value = unescape_string(value)
+    args = []
+    current = []
+    in_quotes = False
+    has_token = False
+    i = 0
+    while i < len(value):
+        char = value[i]
+        if in_quotes:
+            if char == "\\" and i + 1 < len(value) and value[i + 1] in RESERVED_IN_QUOTES:
+                current.append(value[i + 1])
+                i += 2
+                continue
+            if char == '"':
+                in_quotes = False
+            else:
+                current.append(char)
+            i += 1
+            continue
+        if char == '"':
+            in_quotes = True
+            has_token = True
+        elif char in " \t":
+            if has_token:
+                args.append("".join(current))
+                current = []
+                has_token = False
+        elif char in "`$\\;&|<>(){}'*?#~":
+            # Reserved characters must be quoted; unquoted use implies a shell.
+            raise DesktopEntryError(f"unquoted reserved character {char!r}")
+        else:
+            current.append(char)
+            has_token = True
+        i += 1
+    if in_quotes:
+        raise DesktopEntryError("unterminated quote")
+    if has_token:
+        args.append("".join(current))
+
+    result = []
+    for arg in args:
+        if arg.startswith("%") and len(arg) == 2 and arg[1] in FIELD_CODES:
+            continue  # field codes expand to nothing for a session
+        if "%" in arg:
+            arg = arg.replace("%%", "\0")
+            if "%" in arg:
+                raise DesktopEntryError("embedded field code")
+            arg = arg.replace("\0", "%")
+        if "\0" in arg or "\n" in arg:
+            raise DesktopEntryError("control character in argument")
+        result.append(arg)
+    if not result:
+        raise DesktopEntryError("empty Exec")
+    return result
+
+
+def trusted_executable(path):
+    """True when path is a regular, executable, root-owned file that no other
+    user can modify, inside root-owned directories that no other user can
+    modify."""
+    try:
+        resolved = Path(os.path.realpath(path))
+        info = resolved.stat()
+    except OSError:
+        return False
+    if not stat.S_ISREG(info.st_mode) or not os.access(resolved, os.X_OK):
+        return False
+    if info.st_uid != 0 or info.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
+        return False
+    for parent in resolved.parents:
+        try:
+            pinfo = parent.stat()
+        except OSError:
+            return False
+        if pinfo.st_uid != 0 or pinfo.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
+            return False
+    return True
+
+
+def resolve_program(program, search_path=SEARCH_PATH):
+    if "/" in program:
+        if not program.startswith("/"):
+            return None
+        return program if trusted_executable(program) else None
+    for directory in search_path:
+        candidate = os.path.join(directory, program)
+        if trusted_executable(candidate):
+            return candidate
+    return None
+
+
+def session_from_file(path, search_path=SEARCH_PATH):
+    """Return a catalog entry, or (None, reason) when the file is skipped."""
+    info = os.lstat(path)
+    if not stat.S_ISREG(info.st_mode):
+        return None, "not a regular file"
+    if info.st_size > MAX_FILE_SIZE:
+        return None, "file too large"
+    entry = parse_desktop_entry(Path(path).read_text(encoding="utf-8"))
+    if entry.get("Type", "Application") != "Application":
+        return None, "Type is not Application"
+    if entry.get("Hidden", "").lower() == "true" or entry.get("NoDisplay", "").lower() == "true":
+        return None, "hidden"
+    name = unescape_string(entry.get("Name", "")).strip()
+    if not name or "\n" in name:
+        return None, "missing Name"
+    try_exec = entry.get("TryExec")
+    if try_exec and resolve_program(unescape_string(try_exec), search_path) is None:
+        return None, "TryExec not found"
+    try:
+        argv = split_exec(entry.get("Exec", ""))
+    except DesktopEntryError as error:
+        return None, f"Exec rejected: {error}"
+    program = resolve_program(argv[0], search_path)
+    if program is None:
+        return None, "Exec program is missing or not root-owned"
+    argv[0] = program
+    session_id = Path(path).name[: -len(".desktop")]
+    desktop_names = [part for part in unescape_string(entry.get("DesktopNames", "")).split(";") if part]
+    if any(not part.replace("-", "").replace("_", "").replace(".", "").isalnum() for part in desktop_names):
+        return None, "invalid DesktopNames"
+    return {
+        "id": session_id,
+        "name": name,
+        "command": argv,
+        "desktopNames": desktop_names,
+        "type": "wayland",
+    }, None
+
+
+def build_catalog(sessions_dir, search_path=SEARCH_PATH):
+    sessions = []
+    skipped = []
+    directory = Path(sessions_dir)
+    if directory.is_dir():
+        for path in sorted(directory.glob("*.desktop")):
+            stem = path.name[: -len(".desktop")]
+            if not stem or not all(c.isalnum() or c in "-_." for c in stem):
+                skipped.append((path.name, "invalid file name"))
+                continue
+            try:
+                session, reason = session_from_file(path, search_path)
+            except (OSError, UnicodeDecodeError) as error:
+                session, reason = None, f"unreadable: {error.__class__.__name__}"
+            if session is None:
+                skipped.append((path.name, reason))
+            else:
+                sessions.append(session)
+    sessions.sort(key=lambda item: (item["name"].lower(), item["id"]))
+    return {"version": 1, "sessions": sessions}, skipped
+
+
+def write_atomically(output, payload):
+    output = Path(output)
+    output.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(prefix=".sessions.", dir=output.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+        os.chmod(temporary, 0o644)
+        os.replace(temporary, output)
+    except BaseException:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+        raise
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--sessions-dir", default=DEFAULT_SESSIONS_DIR)
+    parser.add_argument("--output", default=DEFAULT_OUTPUT)
+    parser.add_argument("--check", action="store_true", help="print the catalog instead of writing it")
+    args = parser.parse_args(argv)
+
+    catalog, skipped = build_catalog(args.sessions_dir)
+    for name, reason in skipped:
+        print(f"nocturne-greeter-sessions: skipped {name}: {reason}", file=sys.stderr)
+    if args.check:
+        json.dump(catalog, sys.stdout, indent=2, sort_keys=True)
+        print()
+        return 0
+    write_atomically(args.output, catalog)
+    print(f"nocturne-greeter-sessions: {len(catalog['sessions'])} session(s) written to {args.output}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

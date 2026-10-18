@@ -21,6 +21,8 @@ QML_IMPORT_PATH=/usr/lib/qt6/qml "$qml_linter" -E --ignore-settings \
 lint_root="$(mktemp -d "${TMPDIR:-/tmp}/nocturne-qml-lint.XXXXXX")"
 trap 'rm -r -- "$lint_root"' EXIT
 cp -a -- "$project_root/production-root/usr/share/nocturne-greeter/." "$lint_root/"
+# The staged tree's own shell.qml is the pre-login entrypoint; lint it first.
+QML_IMPORT_PATH=/usr/lib/qt6/qml "$qml_linter" -E --ignore-settings "$lint_root/shell.qml"
 mkdir "$lint_root/mock"
 cp -- "$project_root/harness/shell.qml" "$lint_root/shell.qml"
 cp -- "$project_root/harness/mock/"*.qml "$lint_root/mock/"

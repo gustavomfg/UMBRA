@@ -17,6 +17,7 @@ Item {
     signal failure(string message, int attemptGeneration)
     signal readyToLaunch(int attemptGeneration)
     signal backendError(string message, int attemptGeneration)
+    signal launched(int attemptGeneration)
 
     function begin(user, session, attemptGeneration) {
         void user;
@@ -30,12 +31,16 @@ Item {
             message("Touch your security key", false, generation);
         else if (scenario === "error-message")
             message("Security key not detected", true, generation);
+        else if (scenario === "faillock-messages") {
+            message("The account is locked due to 3 failed logins.", false, generation);
+            message("(10 minutes left to unlock)", false, generation);
+        }
 
         promptCount = 1;
         if (scenario === "visible-prompt")
             prompt("Enter one-time code", true, true, generation);
         else
-            prompt("Enter your password", true, false, generation);
+            prompt(scenario === "faillock-messages" ? "Password: " : "Enter your password", true, false, generation);
         responseRequired = true;
         return true;
     }
@@ -66,8 +71,17 @@ Item {
         }
     }
 
-    function requestSessionLaunch() {
-        return false;
+    // Tests opt in; the isolated harness never launches anything.
+    property bool launchAccepted: false
+    property int launchRequests: 0
+    property int lastLaunchGeneration: 0
+
+    function requestSessionLaunch(attemptGeneration) {
+        if (!launchAccepted || attemptGeneration === undefined || attemptGeneration !== generation)
+            return false;
+        launchRequests += 1;
+        lastLaunchGeneration = attemptGeneration;
+        return true;
     }
 
     function disconnectBackend() {

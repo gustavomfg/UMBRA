@@ -1,0 +1,76 @@
+# Local PKGBUILD for the Nocturne greeter. Build from this directory:
+#   makepkg -sif
+# The presentation module uses Qt's QPA native interface and is compiled
+# against the Qt installed at build time; nocturne-greeter-check.hook warns
+# when a Qt/Quickshell upgrade breaks it, and a rebuild fixes it.
+
+pkgname=nocturne-greeter
+pkgver=0.9.0
+pkgrel=2
+pkgdesc="Umbra: a Quickshell greeter for greetd with a presentation-gated session launch"
+arch=('x86_64')
+license=('unknown')
+depends=(
+    'greetd'
+    'cage'
+    'quickshell'
+    'qt6-base'
+    'qt6-declarative'
+    'qt6-wayland'
+    'qt6-svg'
+    'wayland'
+    'python'
+    'adwaita-fonts'
+    'noto-fonts'
+)
+makedepends=('wayland-protocols' 'pkgconf' 'gcc')
+backup=('etc/nocturne-greeter/greetd.toml')
+options=('!debug')
+install=nocturne-greeter.install
+source=()
+
+_repo() {
+    # The PKGBUILD lives in packaging/arch inside the source tree.
+    realpath "$startdir/../.."
+}
+
+build() {
+    NOCTURNE_BUILD_DIR="$srcdir/build" "$(_repo)/scripts/build-presentation-probe.sh"
+}
+
+check() {
+    local repo
+    repo="$(_repo)"
+    python3 -I -m unittest discover -s "$repo/tests" -p 'test_sessions_catalog.py' -q
+}
+
+package() {
+    local repo share
+    repo="$(_repo)"
+    share="$pkgdir/usr/share/nocturne-greeter"
+
+    install -Dm644 "$repo/greeter/shell.qml" "$share/shell.qml"
+    local component
+    for component in \
+        AuthPanel.qml AuthenticatorBridge.qml ClockDisplay.qml CosmicScene.qml \
+        GreetdAuthenticator.qml GreeterCatalog.qml GreeterController.qml \
+        GreeterWindow.qml IconButton.qml SessionLaunchGate.qml \
+        SessionLaunchPolicy.qml SystemChrome.qml greeter-model.js; do
+        install -Dm644 "$repo/components/$component" "$share/components/$component"
+    done
+    install -Dm644 "$repo/assets/nocturne-mark.svg" "$share/assets/nocturne-mark.svg"
+    install -Dm644 -t "$share/assets/icons" "$repo"/assets/icons/*.svg
+    install -Dm644 "$repo/shaders/pulse.frag.qsb" "$share/shaders/pulse.frag.qsb"
+
+    install -Dm644 -t "$pkgdir/usr/lib/qt6/qml/Nocturne/Presentation" \
+        "$srcdir/build/qml/Nocturne/Presentation/libnocturnepresentation.so" \
+        "$srcdir/build/qml/Nocturne/Presentation/qmldir"
+
+    install -Dm755 "$repo/system/nocturne-greeter-sessions" "$pkgdir/usr/lib/nocturne-greeter/nocturne-greeter-sessions"
+    install -Dm755 "$repo/system/nocturne-greeter-check" "$pkgdir/usr/lib/nocturne-greeter/nocturne-greeter-check"
+    install -Dm644 "$repo/system/nocturne-greeter-sessions.hook" "$pkgdir/usr/share/libalpm/hooks/nocturne-greeter-sessions.hook"
+    install -Dm644 "$repo/system/nocturne-greeter-check.hook" "$pkgdir/usr/share/libalpm/hooks/nocturne-greeter-check.hook"
+    install -Dm644 "$repo/system/tmpfiles.conf" "$pkgdir/usr/lib/tmpfiles.d/nocturne-greeter.conf"
+    install -Dm644 "$repo/system/greetd.toml" "$pkgdir/etc/nocturne-greeter/greetd.toml"
+    install -Dm644 "$repo/system/greetd-dropin.conf" "$pkgdir/usr/lib/systemd/system/greetd.service.d/nocturne-greeter.conf"
+}

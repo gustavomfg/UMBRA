@@ -1,4 +1,5 @@
 import QtQuick
+import "greeter-model.js" as Model
 
 Item {
     id: root
@@ -15,8 +16,15 @@ Item {
     property int generation: 0
     property bool attemptActive: false
     property bool retryAfterFailure: false
+    // Generation that reached readyToLaunch; 0 when no attempt is ready.
+    property int readyGeneration: 0
+    property bool launchRequested: false
+    // PAM messages received since the last response; shown together so a
+    // multi-part notice (e.g. faillock's reason and remaining time) survives.
+    property string messageBuffer: ""
+    property bool messageBufferIsError: false
 
-    readonly property bool sessionLaunchAllowed: false
+    signal sessionLaunched(int attemptGeneration)
 
     function beginIfNeeded(userHint) {
         if (attemptActive)
@@ -34,6 +42,10 @@ Item {
         echoResponse = false;
         attemptActive = true;
         retryAfterFailure = false;
+        readyGeneration = 0;
+        launchRequested = false;
+        messageBuffer = "";
+        messageBufferIsError = false;
 
         const started = backend.begin(userId, selectedSession, thisGeneration);
         if (started === false && generation === thisGeneration) {
@@ -55,14 +67,23 @@ Item {
         retryAfterFailure = false;
         responseRequired = false;
         echoResponse = false;
+        readyGeneration = 0;
 
         if (backend && typeof backend.cancel === "function")
             backend.cancel(cancelledGeneration);
     }
 
-    function requestSessionLaunch() {
-        // 0.7 ends at readyToLaunch. There is deliberately no launch path here.
-        return false;
+    // Only SessionLaunchGate calls this, after the black frame was presented.
+    function requestSessionLaunch(attemptGeneration) {
+        if (attemptGeneration === undefined || attemptGeneration !== readyGeneration || attemptGeneration !== generation)
+            return false;
+        if (!attemptActive || launchRequested)
+            return false;
+        if (!backend || typeof backend.requestSessionLaunch !== "function")
+            return false;
+
+        launchRequested = true;
+        return backend.requestSessionLaunch(attemptGeneration) === true;
     }
 
     Connections {
@@ -88,6 +109,8 @@ Item {
                 return;
 
             const thisGeneration = root.generation;
+            root.messageBuffer = "";
+            root.messageBufferIsError = false;
             root.responseRequired = false;
             root.echoResponse = false;
             root.backend.respond(response, thisGeneration);
@@ -104,17 +127,19 @@ Item {
             if (!responseRequired)
                 return;
 
-            root.promptText = message;
+            root.promptText = Model.displayPrompt(message);
             root.responseRequired = true;
             root.echoResponse = echoResponse;
             root.promptSerial += 1;
-            root.controller.presentPrompt(message, true, echoResponse);
+            root.controller.presentPrompt(root.promptText, true, echoResponse);
         }
 
         function onMessage(message, error, attemptGeneration) {
             if (!root.attemptActive || attemptGeneration !== root.generation)
                 return;
-            root.controller.presentMessage(message, error);
+            root.messageBuffer = root.messageBuffer.length > 0 ? root.messageBuffer + " " + message : message;
+            root.messageBufferIsError = root.messageBufferIsError || error;
+            root.controller.presentMessage(root.messageBuffer, root.messageBufferIsError);
         }
 
         function onFailure(message, attemptGeneration) {
@@ -125,6 +150,7 @@ Item {
             root.responseRequired = false;
             root.echoResponse = false;
             root.retryAfterFailure = true;
+            root.readyGeneration = 0;
             root.controller.rejectAuthentication(message);
         }
 
@@ -135,7 +161,14 @@ Item {
             root.responseRequired = false;
             root.echoResponse = false;
             root.retryAfterFailure = false;
+            root.readyGeneration = attemptGeneration;
             root.controller.completeAuthentication();
+        }
+
+        function onLaunched(attemptGeneration) {
+            if (!root.launchRequested || attemptGeneration !== root.readyGeneration)
+                return;
+            root.sessionLaunched(attemptGeneration);
         }
 
         function onBackendError(message, attemptGeneration) {
@@ -146,6 +179,7 @@ Item {
             root.responseRequired = false;
             root.echoResponse = false;
             root.retryAfterFailure = false;
+            root.readyGeneration = 0;
             root.controller.rejectAuthentication(message);
         }
     }

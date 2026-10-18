@@ -1,66 +1,110 @@
 # Nocturne Greeter 0.8 — Real Login Integration in VM
 
-**STATUS: PREPARATION ONLY**
+> 0.9 replaced the hand installer (`scripts/stage-vm-greeter.sh`) and the
+> fixed VM policy with the package and `vm/install-package-in-guest.sh`; see
+> [INSTALL_0.9.md](INSTALL_0.9.md). This report keeps the 0.8 record.
 
-**Last checked:** 2026-10-02
+**STATUS: PROVEN IN A DISPOSABLE VM** (real greetd + PAM + session launch)
 
-**Scope:** prepare a disposable VM experiment. No real greetd/PAM login was run.
+**Last checked:** 2026-10-16
 
-## Proof status
+**Scope:** a disposable Arch Linux QEMU/KVM guest on the workstation, created
+and driven without host privileges. The host's display manager, PAM, boot,
+TTY, seat and login services were not touched. Nothing in this phase proves
+behavior on the host's physical GPU, monitors or PLM.
 
-### PROVEN
+## Results (2026-10-16)
 
-- The 0.7 branch was merged to `main` by PR #1 (`d245b7a`); the local `main`
-  was fast-forwarded to that remote merge commit.
-- The 0.7 QML suite passed **37/37** tests.
-- All **nine** Quickshell Greetd API / local IPC fixture scenarios passed.
-  They covered success, failure, retry, multiple prompts, visible prompts,
-  informational/error messages, cancellation, and a late message after cancel.
-- Every fixture run reported `start_session=0`; the fixture cannot execute a
-  session command and does not call PAM.
-- `qmllint`, `bash -n`, QSB rebuild, GLSL validation, staging and staged
-  SHA-256 verification passed. The nested harness started and cleaned up its
-  compositor, client, fixture and temporary runtime.
-- All eleven VM-guard unit tests passed with synthetic evidence. Read-only
-  `--check` and `--bootstrap --dry-run` both aborted on this physical host
-  before creating the VM marker.
-- The repository scan found no credential-shaped token, password assignment,
-  host home path, machine-id/runtime file, or protocol canary in the logs.
+### Guest and inventory
 
-### PREPARED
+| Item | Value |
+| --- | --- |
+| Hypervisor | `qemu-system-x86_64` 11.1.2 (Arch `qemu-system-x86`, minimal build: no UI, no virtio-gpu/virgl modules), KVM, q35, SeaBIOS, 4 vCPU, 6 GiB, 40 GiB qcow2 |
+| Display | `bochs-display` 1280×720 → guest `bochs-drm` KMS. No GL: Cage uses pixman; Qt Quick renders through Mesa llvmpipe |
+| Guest | Arch Linux cloud image 20261015.611680 (SHA-256 verified), kernel 7.2.10-arch1-1, systemd 262, PAM 1.7.3 |
+| Packages | greetd 0.10.3-2, greetd-agreety 0.10.3-2, cage 0.3.1-1, quickshell 0.3.2-1, qt6-base 6.12.0-3, qt6-wayland 6.12.0-1, mesa 26.2.4, foot 1.28.0-2 |
+| PAM | packaged `/etc/pam.d/greetd` unchanged, SHA-256 `993a3096c2b113e6800f2abbd5d4233ebf1a97eef423990d3187d665d3490b92`. Lockout: default `pam_faillock` (deny=3, unlock_time=600) |
+| greeter identity | `greeter` uid/gid 967, groups `greeter,video` (distribution sysusers). greetd socket `/run/greetd-<pid>.sock` owned by `greeter` |
+| Installed tree | `/usr/share/nocturne-greeter` and `/usr/lib/qt6/qml/Nocturne/Presentation`, root:root, dirs 0755, files 0644, SHA256SUMS verified |
+| Management | QMP (screen, keyboard, pointer, NIC link, snapshots) and the QEMU guest agent over virtio-serial. No SSH, no inbound forwarding, no host folder. NIC disconnected after package install |
+| Snapshots | `baseline-no-greetd`, `pre-umbra`, `umbra-login-proven`, `pre-boot-enable`, `boot-proven` (internal qcow2) |
 
-- A fail-closed VM guard and eleven fixture-based guard tests are present.
-- The VM, recovery, compositor and session-launch plan below is ready for a
-  guest with a console and snapshot support.
-- The launch lifecycle is specified, while the 0.7 launch barrier remains
-  unchanged.
+The guard (`scripts/real-login-vm-guard.py`) refused `--check` in the guest
+before the marker existed, bootstrapped the root-owned marker, and then passed.
+Every guest-changing script (`stage-vm-greeter.sh`) calls `--check` first.
 
-### NOT PROVEN
+### Proof matrix
 
-- No VM is available in the current environment. No daemon greetd, real PAM,
-  test account, real seat/DRM ownership, input device, session launch, logout
-  cycle, failure recovery or boot-to-greeter was exercised.
-- No real password was entered. The mock and IPC fixture results remain
-  simulated authentication.
-- Results from the nested harness do not establish behavior on a pre-login
-  seat or on the host's physical GPU and monitors.
+| Case | Result |
+| --- | --- |
+| Recovery console before greetd | **PASS.** VT3 getty reachable with Ctrl+Alt+F3; console login and logout of the disposable user |
+| agreety: empty, incorrect, repeated incorrect | **PASS.** Each returns a usable `login:` prompt; no loop. The third failure triggered the distribution `pam_faillock` lock (recorded; reset with `faillock --reset` from root) |
+| agreety: correct password, logout | **PASS.** PAM session on tty2; `exit` returns to a fresh agreety greeter session |
+| Cage seat probe as `greeter` | **PASS.** Cage + foot via greetd; keyboard and pointer input; VT2 → VT3 → VT2 |
+| Umbra pre-login: focus, typing, Backspace, Enter, mouse wake | **PASS.** Masked dots; Backspace removes dots; Enter submits; click wakes without seeding the field |
+| Umbra: incorrect and empty password | **PASS.** PAM `AUTH_ERR`; FAILURE then a new greetd attempt with the real PAM prompt (`Password:`) |
+| Umbra: correct password → SUCCESS → black → launch | **PASS (real).** Journal order `success-finished → black-commit-armed → black-commit-presented → launch-requested`; presented ≈ 40 ms after arming; user session opened ≈ 120 ms after the request |
+| Escape during prompt | **PASS.** Attempt cancelled (`conversation failed`), greeter exits by design, packaged `greetd.service` (`Restart=always`) starts a fresh greeter in ≈ 1 s |
+| Late callback after cancel | **SIMULATED** (fixture + QML tests), as planned |
+| Multiple PAM challenges | **NOT APPLICABLE.** Packaged PAM returns one challenge; PAM was not changed. Fixture covers it |
+| Three login → Wayland session → logout cycles | **PASS.** After each logout only greeter Cage/Quickshell remain; after each login only the user's cage/foot/sh |
+| Two reboots through greetd boot path | **PASS.** ≈ 7 s to Umbra; login/logout after each boot; plus a third boot with the final tree (6.5 s) |
+| Canary scan | **PASS.** The test password never appeared in the journal, `/var/log`, `/tmp`, `/run/user`, `/var/cache`, `/var/lib/greetd` or `/home`. A positive control proved the scanner detects it |
 
-## Environment checked
+### Failure injection
 
-This workspace is on the physical host, not inside a guest. On 2026-10-01:
+| Fault | greetd | Compositor / greeter | Loop | Recovery |
+| --- | --- | --- | --- | --- |
+| Broken `shell.qml` | restarts 5× then `start-limit-hit` (systemd `StartLimitBurst=5/30s`) | Quickshell exits on load, Cage exits | bounded by systemd | VT3; restore file (SHA256SUMS), `reset-failed`, start. No snapshot needed |
+| Missing `pulse.frag.qsb` | unaffected | Umbra degrades: no planet, UI and login still work (`Failed to find shader`) | none | restore file |
+| Quickshell SIGSEGV | unaffected | Quickshell's crash handler relaunches the config inside the same Cage; login works. Session start is delayed ≈ 5 s because the crash helper keeps the greeter Cage alive; the crash reporter cannot write to `//.cache` (greeter home is `/`) | none | automatic |
+| Cage SIGTERM | restarts once | fresh Cage + Umbra | none | automatic |
+| Session exits immediately (`/usr/bin/true` policy) | not restarted | session opened/closed in 0.24 s; Umbra returns in ≈ 1 s | none (needs a new login) | automatic |
+| `systemctl restart greetd` while typing | restarted | old greeter gone, fresh Umbra, no orphan Cage | none | automatic |
+| Incorrect credentials | — | FAILURE, retry prompt | faillock after 3 | `faillock --reset` or wait 600 s |
 
-- `systemd-detect-virt` and `systemd-detect-virt --vm` reported no
-  virtualization. DMI reported a physical motherboard product string.
-- The host is CachyOS on systemd 262. `systemd-vmspawn` is installed and
-  `/dev/kvm` exists, but `qemu-system-x86_64`, `qemu-img`, `virt-install`,
-  `virt-manager`, and VirtualBox tools were not found. `libvirtd` and
-  `virtqemud` were inactive.
-- `/var/lib/machines` was not readable by the workspace user, so that location
-  was not treated as an inventory. No VM was started or created.
+### Fixes made because of the VM run
 
-**Decision:** stop before installing a hypervisor or creating a guest. The
-current host is not the test target. A suitable, disposable VM must be made
-available separately.
+- **Greeter stderr on the VT.** greetd gives the greeter its VT as stdio, so
+  Cage/Quickshell logs were printed on tty after the greeter exited. The VM
+  config now wraps the command in `systemd-cat --identifier=nocturne-greeter`.
+- **Cancel lifecycle.** The fresh-process lifecycle depends on the packaged
+  unit's `Restart=always`; the VM uses a drop-in that only changes the config
+  path. A transient unit without restart leaves no greeter.
+- **Recovery from the test session.** `cage` without `-s` blocks VT switching
+  inside the user session. The VM policy argv is now
+  `[/usr/bin/cage, -s, --, /usr/bin/foot, -e, /usr/bin/sh]`; VT3 round trip
+  from the session was verified.
+- **Session chip** shows the policy label instead of "Local session".
+
+### Limits that remain
+
+- The VM has no GPU acceleration. Quickshell used ≈ 1.7 cores (llvmpipe) in
+  idle and AUTH; Cage ≈ 4 %; RSS: Quickshell ≈ 290 MB, Cage ≈ 49 MB, greetd
+  ≈ 4 + 13 MB. These are VM regression numbers, not host predictions; a
+  software-rendered machine would need a reduced-motion fallback.
+- A printable key used to wake Umbra becomes the first character of the
+  response (existing 0.4 behavior). Mouse wake does not.
+- The PAM prompt text (`Password:`) replaces the default "Enter your
+  password" label after the first attempt.
+- Optional step 10 (Hyprland/UWSM) was not run.
+- No physical seat, NVIDIA GPU, multi-monitor layout or host PLM was tested.
+  Production packaging, user/session models and power actions remain future
+  work.
+
+### Reproduce
+
+```sh
+./vm/nocturne-vm.py --help                    # QMP/QGA control, no host privileges
+./vm/nocturne-vm.py start --loadvm boot-proven
+./vm/nocturne-vm.py wait-agent
+# inside the guest (via the agent): scripts/stage-vm-greeter.sh --confirm-real-login-vm
+./vm/nocturne-vm.py stop
+```
+
+The VM directory (`~/.local/share/nocturne-greeter-vm`) holds the disk,
+snapshots, evidence screenshots and the 0600 test-user secret file; none of it
+is in the repository.
 
 ## Recommended VM
 
@@ -104,8 +148,8 @@ signals:
 The only write mode in the guard bootstraps that marker. It checks the first
 three VM signals and explicit confirmation before checking root privileges or
 writing anything. On the current host the identity checks fail, so marker
-creation cannot proceed. There are no greetd/PAM/systemd installer scripts in
-this preparation branch.
+creation cannot proceed. The only guest installer, `scripts/stage-vm-greeter.sh`,
+runs `--check` before its first write.
 
 After a VM has been provisioned, boot it to its own console, verify that it is
 the intended disposable guest, copy/clone the project **inside the guest**
@@ -195,7 +239,7 @@ Keep checkpoints separate so a failure has a known recovery point.
    mouse submit, incorrect-password FAILURE, retry and correct-password
    SUCCESS. Use a fresh guest-only canary and do not record its value.
 6. **Session launch:** allow only one fixed test command in the VM build:
-   `[/usr/bin/cage, --, /usr/bin/foot, -e, /usr/bin/sh]`. This creates a real
+   `[/usr/bin/cage, -s, --, /usr/bin/foot, -e, /usr/bin/sh]`. This creates a real
    user Wayland compositor (`cage`) and terminal client (`foot`) without
    importing personal desktop files or evaluating a user-provided shell
    string. Type `exit` to log out. Do not offer general session selection in
@@ -280,15 +324,16 @@ presented it. The present gate must therefore require both:
    must keep launch disabled. A timeout may abort the attempt; it must never
    grant permission to launch.
 
-The current QML frontend has no presentation-feedback bridge. Qt's documented
-Wayland application native interface exposes the app's `wl_display`, but not a
-documented public handle for the particular Quickshell window surface; Qt also
-does not promise source/binary compatibility for native interfaces. Before
-enabling launch, implement and test a small in-process bridge (or an equally
-strong supported mechanism) that associates presentation feedback with the
-exact fullscreen Umbra surface and exact black commit. If the installed Qt /
-Quickshell stack cannot provide that correlation safely, stop with launch
-blocked. `frameSwapped()` alone is insufficient.
+**Implemented in 0.8:** `presentation/` builds the `Nocturne.Presentation`
+QML module (`PresentationProbe`). It binds `wp_presentation` on a private
+Wayland event queue, takes the exact `wl_surface` of the Umbra `QQuickWindow`
+through Qt's QPA native interface, and creates one feedback object for the
+next commit after `SessionLaunchGate` has seen two swapped frames of the
+opaque black hold. Only `presented` for that token opens the gate; a missing
+module, non-Wayland platform, `discarded`, global removal or a 3 s timeout
+blocks the launch and restarts the greeter. Qt's QPA interface has no
+compatibility promise, so the module must be built against the exact Qt that
+loads it (`scripts/build-presentation-probe.sh`, run inside the guest).
 
 Once the `presented` event arrives, verify the black scene is still held,
 `readyToLaunch` and the generation still match, and that no launch has already
@@ -312,7 +357,11 @@ to terminate promptly afterward. Therefore all animation and presentation
 feedback must complete before the API call; do not start an animation after
 calling it or wait for visual confirmation after requesting launch.
 
-### Cancellation limitation to resolve in the VM
+### Cancellation lifecycle (resolved in the VM)
+
+Chosen and proven: cancel → the greeter process exits → packaged
+`greetd.service` restarts → a fresh greeter and Greetd connection. The
+adapter still refuses reuse of a cancelled singleton. Original analysis:
 
 The 0.7 adapter intentionally marks its process-wide Greetd singleton as
 poisoned after cancellation because the public API has no attempt IDs or
@@ -365,13 +414,12 @@ record any objective font/DPI/input defect before changing visuals.
 
 ## Current repository and host safety
 
-- Current preparation branch: `feat/real-login-vm`, based on merged 0.7
-  `main`.
+- Branch: `feat/real-login-vm`, based on merged 0.7 `main`.
 - Do not commit VM disk images, snapshots, raw logs, test passwords, machine
   IDs, host inventory, or screenshots containing account/session information.
-- The preparation machine's PAM, display-manager unit, boot, TTY, seat and
-  login services were not changed. No greetd/PAM authentication or session
-  launch was run here.
+- The host's PAM, display-manager unit, boot, TTY, seat and login services
+  were not changed. All greetd/PAM authentication and session launches ran
+  only inside the guest. No sudo or host package installation was used.
 - No force push has been used.
 
 ## Primary references

@@ -1,0 +1,12 @@
+[Trigger]
+Type = Package
+Operation = Upgrade
+Target = qt6-base
+Target = qt6-wayland
+Target = qt6-declarative
+Target = quickshell
+
+[Action]
+Description = Checking that the Nocturne presentation module still loads...
+When = PostTransaction
+Exec = /usr/lib/nocturne-greeter/nocturne-greeter-check
