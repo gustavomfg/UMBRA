@@ -1,4 +1,4 @@
-# Nocturne Greeter 0.8 — Real Login Integration in VM
+# UMBRA 0.8 — Real Login Integration in VM
 
 > 0.9 replaced the hand installer (`scripts/stage-vm-greeter.sh`) and the
 > fixed VM policy with the package and `vm/install-package-in-guest.sh`; see

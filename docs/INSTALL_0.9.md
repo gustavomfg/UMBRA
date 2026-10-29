@@ -1,4 +1,4 @@
-# Nocturne Greeter 0.9 — Users, sessions, package and host install
+# UMBRA 0.9 — Users, sessions, package and host install
 
 > Historical 0.9.0 results. For 0.9.1, use [upgrade/recovery](UPGRADE_RECOVERY.md),
 > the [compatibility matrix](COMPATIBILITY.md) and [release notes](../CHANGELOG.md).

@@ -6,7 +6,7 @@
 Native Linux (Wayland), rendered with Qt Quick/QML and GLSL in Quickshell.
 
 ## Purpose and users
-Nocturne Umbra is a greeter for Arch Linux x86_64 workstations using greetd
+UMBRA is a greeter for Arch Linux x86_64 workstations using greetd
 and the distribution's PAM configuration. It provides a calm transition from
 idle to authentication and an installed Wayland session. Preview and isolated
 fixtures remain available for development without authenticating real users.

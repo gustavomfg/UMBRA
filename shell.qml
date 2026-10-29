@@ -25,7 +25,7 @@ ShellRoot {
         echoResponse: boundary.echoResponse
         sessionContextText: "Current session · preview"
         powerUnavailableText: "Unavailable in preview"
-        windowTitle: "Nocturne Greeter · Preview"
+        windowTitle: "UMBRA · Preview"
         statusModel: liveStatus
         previewShortcutsEnabled: true
     }

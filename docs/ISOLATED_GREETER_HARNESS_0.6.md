@@ -1,4 +1,4 @@
-# Nocturne Greeter 0.6 — isolated greeter harness
+# UMBRA 0.6 — isolated greeter harness
 
 **Estado:** experimento local com autenticação falsa. Nenhuma unit, arquivo PAM, pacote, VT, sessão ou configuração de login do host foi alterada.
 

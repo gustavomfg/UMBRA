@@ -1,4 +1,4 @@
-# Nocturne Umbra 0.4b — Auth motion choreography
+# UMBRA 0.4b — Auth motion choreography
 
 ## Why the old sequence felt disconnected
 

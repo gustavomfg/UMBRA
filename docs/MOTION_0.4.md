@@ -1,4 +1,4 @@
-# Nocturne Umbra 0.4 — Motion and frame pacing
+# UMBRA 0.4 — Motion and frame pacing
 
 ## Diagnosis
 

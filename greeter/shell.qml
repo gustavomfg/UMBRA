@@ -74,7 +74,7 @@ ShellRoot {
         sessionContextText: "Session"
         powerUnavailableText: "Unavailable"
         audioUnavailableText: "Audio unavailable before sign-in"
-        windowTitle: "Nocturne Umbra"
+        windowTitle: "UMBRA"
         sessionOptions: catalog.sessions
         selectedSessionIndex: catalog.selectedSessionIndex
         userOptions: catalog.users

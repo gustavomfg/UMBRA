@@ -28,7 +28,7 @@ FloatingWindow {
     property string sessionContextText: "Selected session"
     property string powerUnavailableText: "Unavailable"
     property string audioUnavailableText: "Audio unavailable"
-    property string windowTitle: "Nocturne Umbra"
+    property string windowTitle: "UMBRA"
     property var sessionOptions: []
     property int selectedSessionIndex: -1
     property var userOptions: []

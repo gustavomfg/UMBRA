@@ -1,4 +1,4 @@
-# Nocturne Greeter — Umbra 1.0.0
+# UMBRA — 1.0.0
 
 [Português (Brasil)](README.md) · English
 
@@ -6,7 +6,7 @@ A greeter for Wayland sessions, built with **Quickshell, QML and GLSL** and inte
 
 **Version `1.0.0-2` — functional baseline complete for the owner's Arch Linux x86_64 / Wayland workstation with one monitor.** Real login, menu keyboard navigation, Qt compatibility preflight, text login recovery and packaging have been validated. Other GPUs and physical multi-monitor setups are outside this release's scope. See the [support scope and validation record](docs/COMPATIBILITY.md).
 
-![Nocturne Greeter Umbra sign-in screen](docs/screenshots/nocturne-umbra-auth.png)
+![UMBRA sign-in screen](docs/screenshots/nocturne-umbra-auth.png)
 
 *Current interface, captured at 1920×1080 in preview mode with a demonstration identity.*
 
@@ -29,8 +29,8 @@ A greeter for Wayland sessions, built with **Quickshell, QML and GLSL** and inte
 Clone the repository and build the local package:
 
 ```sh
-git clone --branch main https://github.com/gustavomfg/nocturne-greeter.git
-cd nocturne-greeter/packaging/arch
+git clone --branch main https://github.com/gustavomfg/UMBRA.git
+cd UMBRA/packaging/arch
 makepkg -sif
 ```
 

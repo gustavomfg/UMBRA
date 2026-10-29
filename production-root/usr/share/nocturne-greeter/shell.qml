@@ -81,7 +81,7 @@ ShellRoot {
         previewShortcutsEnabled: false
         sessionContextText: "Session"
         powerUnavailableText: "Unavailable"
-        windowTitle: "Nocturne Umbra"
+        windowTitle: "UMBRA"
         sessionOptions: catalog.sessions
         selectedSessionIndex: catalog.selectedSessionIndex
         userOptions: catalog.users

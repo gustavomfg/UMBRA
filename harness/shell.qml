@@ -36,7 +36,7 @@ ShellRoot {
         previewShortcutsEnabled: false
         sessionContextText: "Selected session · mock"
         powerUnavailableText: "Unavailable in isolated harness"
-        windowTitle: "Nocturne Umbra · Isolated"
+        windowTitle: "UMBRA · Isolated"
     }
 
     AuthenticatorBridge {

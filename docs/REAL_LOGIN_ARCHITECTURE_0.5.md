@@ -1,4 +1,4 @@
-# Nocturne Greeter 0.5 — descoberta da arquitetura de login real
+# UMBRA 0.5 — descoberta da arquitetura de login real
 
 **Estado:** investigação e proposta; nenhuma integração foi implementada.
 

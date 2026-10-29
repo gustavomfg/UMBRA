@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed environment guard for Nocturne Greeter 0.8 VM operations.
+"""Fail-closed environment guard for UMBRA 0.8 VM operations.
 
 This tool does not configure greetd, PAM, systemd, a seat, or boot. Its only
 write mode bootstraps a root-owned marker after three independent VM checks

@@ -1,4 +1,4 @@
-# Local PKGBUILD for the Nocturne greeter. Build from this directory:
+# Local PKGBUILD for UMBRA. Build from this directory:
 #   makepkg -sif
 # The presentation module uses Qt's QPA native interface and is compiled
 # against the Qt installed at build time; nocturne-greeter-check.hook warns
@@ -7,10 +7,10 @@
 pkgname=nocturne-greeter
 pkgver=1.0.0
 pkgrel=2
-pkgdesc="Umbra: a Quickshell greeter for greetd with a presentation-gated session launch"
+pkgdesc="UMBRA: a Quickshell greeter for greetd with a presentation-gated session launch"
 arch=('x86_64')
 license=('MIT')
-url='https://github.com/gustavomfg/nocturne-greeter'
+url='https://github.com/gustavomfg/UMBRA'
 depends=(
     'greetd'
     'greetd-agreety'
