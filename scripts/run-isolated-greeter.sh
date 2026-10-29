@@ -10,6 +10,7 @@ outputs=1
 duration=0
 fault=none
 without_bus=0
+headless=0
 scenario=none
 metrics=0
 auth_backend=mock
@@ -36,6 +37,7 @@ while (($#)); do
             shift 2
             ;;
         --mock-success) auth_scenario=password-success; auth_scenario_explicit=1; shift ;;
+        --headless) headless=1; shift ;;
         --metrics) metrics=1; shift ;;
         --no-session-bus) without_bus=1; shift ;;
         *) printf 'Unknown option: %s\n' "$1" >&2; exit 2 ;;
@@ -79,7 +81,15 @@ if [[ "$scenario" != none && "$duration" == 0 ]]; then
     duration=12
 fi
 
-for program in kwin_wayland quickshell setsid rg; do
+compositor=kwin_wayland
+if ((headless)); then
+    compositor=cage
+    if ((width != 1280 || height != 720)); then
+        printf 'The Cage headless fixture uses 1280x720 outputs. Use KWin for custom dimensions.\n' >&2
+        exit 2
+    fi
+fi
+for program in "$compositor" quickshell setsid rg; do
     if ! command -v "$program" >/dev/null 2>&1; then
         printf 'Required program is missing: %s\n' "$program" >&2
         exit 127
@@ -93,28 +103,30 @@ if ((without_bus == 0)) && ! command -v dbus-daemon >/dev/null 2>&1; then
     printf 'dbus-daemon is required for an isolated session bus.\n' >&2
     exit 127
 fi
-if [[ -z "${XDG_RUNTIME_DIR:-}" || -z "${WAYLAND_DISPLAY:-}" ]]; then
-    printf 'Run this harness inside the current Wayland desktop.\n' >&2
-    exit 2
-fi
-if [[ "$WAYLAND_DISPLAY" == /* ]]; then
-    host_socket="$WAYLAND_DISPLAY"
-else
-    host_socket="$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY"
-fi
-if [[ ! -S "$host_socket" ]]; then
-    printf 'Host Wayland socket is unavailable.\n' >&2
-    exit 2
+host_socket='(headless)'
+if ((headless == 0)); then
+    if [[ -z "${XDG_RUNTIME_DIR:-}" || -z "${WAYLAND_DISPLAY:-}" ]]; then
+        printf 'Run the interactive harness inside a Wayland desktop, or use --headless.\n' >&2
+        exit 2
+    fi
+    if [[ "$WAYLAND_DISPLAY" == /* ]]; then
+        host_socket="$WAYLAND_DISPLAY"
+    else
+        host_socket="$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY"
+    fi
+    if [[ ! -S "$host_socket" ]]; then
+        printf 'Host Wayland socket is unavailable.\n' >&2
+        exit 2
+    fi
 fi
 
-"$project_root/scripts/stage-isolated-greeter.sh" >/dev/null
 
 umask 077
 runtime_root="$(mktemp -d "${TMPDIR:-/tmp}/nocturne-isolated.XXXXXX")"
 log_parent="$project_root/logs/isolated-greeter"
 mkdir -p "$log_parent"
 log_dir="$(mktemp -d "$log_parent/run.XXXXXX")"
-kwin_pid=''
+compositor_pid=''
 quickshell_pid=''
 bus_pid=''
 greetd_fixture_pid=''
@@ -163,7 +175,7 @@ cleanup() {
     trap - EXIT
     stop_group "$quickshell_pid"
     stop_group "$greetd_fixture_pid"
-    stop_group "$kwin_pid"
+    stop_group "$compositor_pid"
     stop_group "$bus_pid"
     if [[ "$runtime_root" == "${TMPDIR:-/tmp}"/nocturne-isolated.* && -d "$runtime_root" ]]; then
         rm -r -- "$runtime_root"
@@ -173,6 +185,8 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
+
+NOCTURNE_STAGING_PARENT="$runtime_root/staging" "$project_root/scripts/stage-isolated-greeter.sh" >/dev/null
 
 mkdir -m 700 "$runtime_root/runtime" "$runtime_root/home" "$runtime_root/config" "$runtime_root/cache" "$runtime_root/data" "$runtime_root/state" "$runtime_root/stage"
 
@@ -221,7 +235,7 @@ if [[ "$auth_backend" == greetd-fixture ]]; then
     fi
 fi
 
-cp -a -- "$project_root/production-root/usr/share/nocturne-greeter/." "$runtime_root/stage/"
+cp -a -- "$runtime_root/staging/nocturne-greeter/." "$runtime_root/stage/"
 (
     cd "$runtime_root/stage"
     sha256sum -c SHA256SUMS >/dev/null
@@ -262,6 +276,7 @@ if ((without_bus == 0)); then
 fi
 
 nested_socket_name=wayland-umbra
+if ((headless)); then nested_socket_name=wayland-0; fi
 nested_socket="$runtime_root/runtime/$nested_socket_name"
 printf 'Host socket: %s\nNested socket: %s\n' "$host_socket" "$nested_socket"
 printf 'Isolated runtime: %s\nLogs: %s\n' "$runtime_root" "$log_dir"
@@ -273,19 +288,25 @@ else
 fi
 
 start_ms="$(date +%s%3N)"
-setsid env -i "${base_env[@]}" kwin_wayland \
-    --wayland-display "$host_socket" \
-    --socket "$nested_socket_name" \
-    --width "$width" --height "$height" --output-count "$outputs" \
-    --no-lockscreen --no-global-shortcuts --no-kactivities \
-    >"$log_dir/compositor.log" 2>&1 &
-kwin_pid=$!
+if ((headless)); then
+    setsid env -i "${base_env[@]}" WLR_BACKENDS=headless WLR_RENDERER=pixman \
+        "WLR_HEADLESS_OUTPUTS=$outputs" WLR_LIBINPUT_NO_DEVICES=1 \
+        cage -- /usr/bin/sleep infinity >"$log_dir/compositor.log" 2>&1 &
+else
+    setsid env -i "${base_env[@]}" kwin_wayland \
+        --wayland-display "$host_socket" \
+        --socket "$nested_socket_name" \
+        --width "$width" --height "$height" --output-count "$outputs" \
+        --no-lockscreen --no-global-shortcuts --no-kactivities \
+        >"$log_dir/compositor.log" 2>&1 &
+fi
+compositor_pid=$!
 
 for ((attempt = 0; attempt < 100; attempt++)); do
     if [[ -S "$nested_socket" ]]; then
         break
     fi
-    if ! kill -0 "$kwin_pid" 2>/dev/null; then
+    if ! kill -0 "$compositor_pid" 2>/dev/null; then
         break
     fi
     sleep 0.1
@@ -322,12 +343,12 @@ if ! kill -0 "$quickshell_pid" 2>/dev/null; then
     printf 'Quickshell exited during startup; inspect %s/quickshell.log\n' "$log_dir" >&2
     exit 1
 fi
-if ! kill -0 "$kwin_pid" 2>/dev/null; then
+if ! kill -0 "$compositor_pid" 2>/dev/null; then
     printf 'Nested compositor exited during startup; inspect %s/compositor.log\n' "$log_dir" >&2
     exit 1
 fi
 ready_ms="$(date +%s%3N)"
-printf 'Both processes still running after %s ms. Focus the nested KWin window to interact.\n' "$((ready_ms - start_ms))"
+printf 'Both processes still running after %s ms. Compositor: %s; headless: %s.\n' "$((ready_ms - start_ms))" "$compositor" "$headless"
 printf 'Close with Ctrl+C in this terminal.\n'
 
 deadline=$((SECONDS + duration))
@@ -336,10 +357,10 @@ compositor_fault_sent=0
 while kill -0 "$quickshell_pid" 2>/dev/null; do
     if [[ "$fault" == compositor && "$compositor_fault_sent" == 0 ]] && ((SECONDS >= compositor_fault_at)); then
         compositor_fault_sent=1
-        printf 'Injecting a controlled stop of the nested KWin process.\n'
-        kill -TERM -- "-$kwin_pid" 2>/dev/null || true
+        printf 'Injecting a controlled stop of the isolated compositor process.\n'
+        kill -TERM -- "-$compositor_pid" 2>/dev/null || true
     fi
-    if ! kill -0 "$kwin_pid" 2>/dev/null; then
+    if ! kill -0 "$compositor_pid" 2>/dev/null; then
         printf 'Nested compositor exited while Quickshell was running.\n' >&2
         exit 1
     fi
@@ -354,7 +375,7 @@ while kill -0 "$quickshell_pid" 2>/dev/null; do
     sleep 0.25
 done
 
-if ! kill -0 "$kwin_pid" 2>/dev/null; then
+if ! kill -0 "$compositor_pid" 2>/dev/null; then
     printf 'Nested compositor exited; inspect %s/compositor.log and %s/quickshell.log\n' "$log_dir" "$log_dir" >&2
     exit 1
 fi

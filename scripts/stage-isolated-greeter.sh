@@ -2,7 +2,7 @@
 set -euo pipefail
 
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-staging_parent="$project_root/production-root/usr/share"
+staging_parent="${NOCTURNE_STAGING_PARENT:-$project_root/production-root/usr/share}"
 staging_tree="$staging_parent/nocturne-greeter"
 
 if [[ -L "$staging_tree" ]]; then
@@ -54,8 +54,7 @@ if [[ -L "$project_root/shaders/pulse.frag.qsb" ]]; then
     exit 1
 fi
 cp -- "$project_root/shaders/pulse.frag.qsb" "$build_tree/shaders/pulse.frag.qsb"
-# Pre-login entrypoint. The default SessionLaunchPolicy has no user or command,
-# so this tree blocks every launch until an owned policy replaces it.
+# Production entrypoint; tests replace its root-owned paths with fixtures.
 cp -- "$project_root/greeter/shell.qml" "$build_tree/shell.qml"
 
 (

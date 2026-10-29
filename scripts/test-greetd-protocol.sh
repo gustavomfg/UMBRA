@@ -8,7 +8,7 @@ run_scenario() {
     local auth_scenario="$1"
     local capture_scenario="$2"
     printf '\nTesting Quickshell Greetd API fixture: %s\n' "$auth_scenario"
-    "$runner" \
+    "$runner" --headless \
         --auth-backend greetd-fixture \
         --auth-scenario "$auth_scenario" \
         --scenario "$capture_scenario"

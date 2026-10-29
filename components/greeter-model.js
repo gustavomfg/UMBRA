@@ -164,3 +164,21 @@ function wakeSeedText(text, hasCommandModifier) {
         return "";
     return text.charCodeAt(0) > 32 && text.charCodeAt(0) !== 127 ? text : "";
 }
+
+// Screen enumeration order is not a stable monitor preference. Use the
+// configured connector, then the origin output, then a deterministic name.
+// Re-evaluated whenever Quickshell's connected-screen list changes.
+function selectScreen(screens, preferredName) {
+    if (!screens || screens.length === 0)
+        return null;
+    for (let i = 0; i < screens.length; ++i) {
+        if (preferredName && screens[i].name === preferredName)
+            return screens[i];
+    }
+    const ordered = Array.from(screens).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+    for (let j = 0; j < ordered.length; ++j) {
+        if (ordered[j].x === 0 && ordered[j].y === 0)
+            return ordered[j];
+    }
+    return ordered[0];
+}

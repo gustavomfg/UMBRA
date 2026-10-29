@@ -217,6 +217,8 @@ def cmd_start(args):
     ]
     if args.seed_url:
         argv += ["-smbios", f"type=1,serial=ds=nocloud;s={args.seed_url}"]
+    if args.snapshot:
+        argv += ["-snapshot"]
     if args.loadvm:
         argv += ["-loadvm", args.loadvm]
     if args.paused:
@@ -368,17 +370,27 @@ def cmd_scan_secret(args):
     """Count occurrences of the test secret in guest logs and greeter state.
 
     The secret is passed on stdin to grep -F -f, never as an argument."""
-    script = (
-        "set -o pipefail; hits=0; "
-        "j=$(journalctl -b -o cat --no-pager | grep -c -F -f /dev/stdin <<< \"$SECRET_INPUT\" || true); "
-        "echo \"journal: $j\"; "
-        "f=$(grep -rlsF -f /dev/stdin /var/log /tmp /run/user /var/cache /var/lib/greetd /home 2>/dev/null <<< \"$SECRET_INPUT\" | wc -l); "
-        "echo \"files: $f\"; "
-        "[ \"$j\" = 0 ] && [ \"$f\" = 0 ]"
-    )
-    # Pass the secret as the script's stdin; bash reads it into SECRET_INPUT.
-    wrapper = "IFS= read -r SECRET_INPUT; " + script
-    code, out, err = Qga().run(["/bin/bash", "-c", wrapper], stdin=(read_secret() + "\n").encode())
+    # Keep the pattern on a separate stdin stream. Redirecting grep's stdin
+    # inside a journalctl pipeline discards the journal and can falsely pass.
+    script = """
+import pathlib, subprocess, sys
+secret = sys.stdin.buffer.read().rstrip(b"\\n")
+if not secret:
+    raise SystemExit("empty canary")
+journal = subprocess.run(["journalctl", "-b", "-o", "cat", "--no-pager"], capture_output=True)
+if journal.returncode:
+    raise SystemExit("journal query failed")
+journal_hits = sum(secret in line for line in journal.stdout.splitlines())
+roots = [p for p in ["/var/log", "/tmp", "/run/user", "/var/cache", "/var/lib/greetd", "/home"] if pathlib.Path(p).exists()]
+files = subprocess.run(["grep", "-rIlF", "-f", "/dev/stdin", "--", *roots], input=secret+b"\\n", capture_output=True)
+if files.returncode not in (0, 1):
+    raise SystemExit("file scan failed")
+file_hits = len(files.stdout.splitlines())
+print("journal:", journal_hits)
+print("files:", file_hits)
+raise SystemExit(bool(journal_hits or file_hits))
+"""
+    code, out, err = Qga().run(["/usr/bin/python3", "-I", "-c", script], stdin=(read_secret() + "\n").encode())
     sys.stdout.write(out)
     sys.stderr.write(err)
     print("canary absent" if code == 0 else "CANARY FOUND OR SCAN FAILED")
@@ -392,6 +404,7 @@ def main():
     p = sub.add_parser("start")
     p.add_argument("--cpus", type=int, default=4)
     p.add_argument("--memory", type=int, default=6144)
+    p.add_argument("--snapshot", action="store_true", help="write all guest changes to a temporary overlay; discard on exit")
     p.add_argument("--seed-url")
     p.add_argument("--loadvm")
     p.add_argument("--paused", action="store_true")

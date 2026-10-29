@@ -17,10 +17,10 @@ QML_IMPORT_PATH=/usr/lib/qt6/qml "$qml_linter" -E --ignore-settings \
 
 # The harness entrypoint imports ./components and ./mock from the temporary
 # runtime layout, so lint it in that layout rather than its source directory.
-"$project_root/scripts/stage-isolated-greeter.sh" >/dev/null
 lint_root="$(mktemp -d "${TMPDIR:-/tmp}/nocturne-qml-lint.XXXXXX")"
 trap 'rm -r -- "$lint_root"' EXIT
-cp -a -- "$project_root/production-root/usr/share/nocturne-greeter/." "$lint_root/"
+NOCTURNE_STAGING_PARENT="$lint_root/staging" "$project_root/scripts/stage-isolated-greeter.sh" >/dev/null
+cp -a -- "$lint_root/staging/nocturne-greeter/." "$lint_root/"
 # The staged tree's own shell.qml is the pre-login entrypoint; lint it first.
 QML_IMPORT_PATH=/usr/lib/qt6/qml "$qml_linter" -E --ignore-settings "$lint_root/shell.qml"
 mkdir "$lint_root/mock"

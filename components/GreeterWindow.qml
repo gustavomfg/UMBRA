@@ -5,7 +5,13 @@ import "greeter-model.js" as Model
 
 FloatingWindow {
     id: window
-    readonly property var primaryScreen: Quickshell.screens.length > 0 ? Quickshell.screens[0] : null
+    property string preferredOutput: Quickshell.env("NOCTURNE_OUTPUT") || ""
+    readonly property var primaryScreen: Model.selectScreen(Quickshell.screens, preferredOutput)
+    onPrimaryScreenChanged: {
+        if (primaryScreen)
+            console.info("nocturne-display: " + primaryScreen.name + " outputs=" + Quickshell.screens.length
+                         + " scale=" + primaryScreen.devicePixelRatio);
+    }
     property bool windowedPreview: false
     property int requestedWidth: 1280
     property int requestedHeight: 720

@@ -100,6 +100,21 @@ TestCase {
         compare(Model.wakeSeedText("ç", false), "ç");
     }
 
+    function test_screenSelectionAndHotplug() {
+        const left = { name: "DP-2", x: -1920, y: 0 };
+        const origin = { name: "HDMI-A-1", x: 0, y: 0 };
+        const other = { name: "DP-1", x: 1920, y: 0 };
+        compare(Model.selectScreen([], "DP-2"), null);
+        compare(Model.selectScreen([left, origin], "DP-2"), left);
+        compare(Model.selectScreen([left, origin], "missing"), origin);
+        compare(Model.selectScreen([left, origin], ""), origin);
+        compare(Model.selectScreen([origin, left], ""), origin);
+        compare(Model.selectScreen([left, other], ""), other);
+        // A disconnected preferred connector falls back; reconnecting picks it.
+        compare(Model.selectScreen([origin], "DP-2"), origin);
+        compare(Model.selectScreen([origin, left], "DP-2"), left);
+    }
+
     function test_hostname() {
         compare(Model.firstLine("my-host\n"), "my-host");
         compare(Model.firstLine("bad host!\n"), "");

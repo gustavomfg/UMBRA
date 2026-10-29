@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # End-to-end launch gate check: greeter/shell.qml (pre-login entrypoint) in a
-# headless KWin, real Quickshell Greetd API, local IPC fixture, and the real
+# headless Cage, real Quickshell Greetd API, local IPC fixture, and the real
 # Nocturne.Presentation probe. The fixture acknowledges start_session but has
 # no code that executes a command. Expected order in the greeter log:
 #   success-finished → black-commit-armed → black-commit-presented → launch-requested
@@ -56,10 +56,18 @@ printf '{"version": 1, "user": "launch-fixture", "session": "fixture-session"}\n
 cp -- "$project_root/tests/launch-e2e/E2EDriver.qml" "$run_root/stage/E2EDriver.qml"
 cp -a -- "$project_root/assets" "$project_root/shaders" "$run_root/stage/"
 # Inject the driver as the last child of ShellRoot.
-python3 - "$project_root/greeter/shell.qml" "$run_root/stage/shell.qml" <<'PY'
-import sys
+python3 - "$project_root/greeter/shell.qml" "$run_root/stage/shell.qml" "$with_probe" "$project_root/build/qml/Nocturne/Presentation" <<'PY'
+import json, pathlib, sys
 source = open(sys.argv[1], encoding="utf-8").read().rstrip()
 assert source.endswith("}")
+if sys.argv[3] == "1":
+    # Load this build, even when an older module is installed system-wide.
+    uri = pathlib.Path(sys.argv[4]).resolve().as_uri()
+    probe = 'import "' + uri + '" as Presentation; Presentation.PresentationProbe {}'
+else:
+    # An installed module must not defeat the missing-probe fault injection.
+    probe = 'import Nocturne.AbsentPresentationForTest; PresentationProbe {}'
+source = source.replace('"import Nocturne.Presentation; PresentationProbe {}"', json.dumps(probe))
 driver = "\n    E2EDriver {\n        controller: greeter.controller\n        authPanel: greeter.authPanel\n    }\n}\n"
 open(sys.argv[2], "w", encoding="utf-8").write(source[:-1] + driver)
 PY
@@ -83,10 +91,11 @@ fi
 set +e
 env -i PATH=/usr/bin HOME="$run_root/runtime" XDG_RUNTIME_DIR="$run_root/runtime" \
     QML_IMPORT_PATH="$import_path" GREETD_SOCK="$greetd_sock" \
-    timeout 30 kwin_wayland --virtual --no-lockscreen --socket ncg-0 --width 1280 --height 720 \
-    --exit-with-session "/usr/bin/quickshell --no-duplicate -p $run_root/stage" \
+    WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_HEADLESS_OUTPUTS=1 \
+    WLR_LIBINPUT_NO_DEVICES=1 QT_QPA_PLATFORM=wayland \
+    timeout 30 cage -- /usr/bin/quickshell --no-duplicate -p "$run_root/stage" \
     >"$run_root/greeter.log" 2>&1
-kwin_status=$?
+compositor_status=$?
 set -e
 
 kill -TERM "$fixture_pid" 2>/dev/null || true
@@ -99,7 +108,7 @@ if grep -q 'fixture-response' "$run_root/greeter.log"; then
     exit 1
 fi
 
-python3 - "$status_file" "$run_root/greeter.log" "$with_probe" "$kwin_status" "$run_root/fixture/state.json" <<'PY'
+python3 - "$status_file" "$run_root/greeter.log" "$with_probe" "$compositor_status" "$run_root/fixture/state.json" <<'PY'
 import json, re, sys
 
 status = json.load(open(sys.argv[1], encoding="utf-8"))
@@ -107,7 +116,7 @@ log = re.sub(r"\x1b\[[0-9;]*m", "", open(sys.argv[2], encoding="utf-8", errors="
 with_probe = sys.argv[3] == "1"
 markers = re.findall(r"nocturne-launch: ([a-z-]+)", log)
 print("Fixture: create_session={create_session} start_session={start_session}".format(**status))
-print("KWin/Quickshell exit status: " + sys.argv[4])
+print("Cage/Quickshell exit status: " + sys.argv[4])
 
 if with_probe:
     expected = ["success-finished", "black-commit-armed", "black-commit-presented", "launch-requested"]
@@ -123,7 +132,7 @@ if with_probe:
     state = json.load(open(sys.argv[5], encoding="utf-8"))
     if state.get("user") != "launch-fixture" or state.get("session") != "fixture-session":
         raise SystemExit("FAIL: last selection was not saved: %r" % state)
-    if sys.argv[4] == "124":
+    if sys.argv[4] != "0":
         raise SystemExit("FAIL: Quickshell did not exit after the launch acknowledgement")
     print("PASS: black frame presented before the single allowlisted launch request; Quickshell exited.")
 else:
