@@ -1,10 +1,10 @@
-# Nocturne Greeter — Umbra 0.9.1
+# Nocturne Greeter — Umbra 1.0.0
 
 Português (Brasil) · [English](README.en.md)
 
 Greeter para sessões Wayland, construído com **Quickshell, QML e GLSL** e integrado ao **greetd + PAM**. A interface combina um corpo obsidiano, matéria orbital animada e uma tela de autenticação minimalista.
 
-**Arch Linux x86_64 / Wayland — versão `0.9.1-1`.** Esta versão completa a navegação dos menus por teclado, acrescenta seleção explícita de monitor, checagem de compatibilidade com Qt e recuperação por login em texto via agreety. A versão anterior `0.9.0-2` já era usada no sistema do autor. Consulte a [matriz de validação](docs/COMPATIBILITY.md) para os casos testados e a cobertura física ainda pendente.
+**Versão `1.0.0-1` — base funcional concluída para a estação Arch Linux x86_64 / Wayland do autor, com um monitor.** Login real, navegação dos menus por teclado, checagem de compatibilidade com Qt, recuperação por login em texto e empacotamento foram validados. Outras GPUs e configurações físicas com vários monitores ficam fora do escopo desta versão. Veja o [escopo de suporte e os resultados de validação](docs/COMPATIBILITY.md).
 
 ![Tela de autenticação do Nocturne Greeter Umbra](docs/screenshots/nocturne-umbra-auth.png)
 
@@ -28,7 +28,7 @@ Greeter para sessões Wayland, construído com **Quickshell, QML e GLSL** e inte
 Clone o repositório e compile o pacote local:
 
 ```sh
-git clone --branch v0.9.1 https://github.com/gustavomfg/nocturne-greeter.git
+git clone --branch v1.0.0 https://github.com/gustavomfg/nocturne-greeter.git
 cd nocturne-greeter/packaging/arch
 makepkg -sif
 ```
@@ -84,7 +84,7 @@ Para conhecer a interface sem sair da sessão atual, execute a partir da raiz do
 ./scripts/run-preview.sh
 ```
 
-Abre em tela cheia no monitor primário. `Ctrl+Q` ou `Alt+F4` encerra. Para abrir em uma janela:
+Abre em tela cheia na saída selecionada (por padrão, a saída na origem ou uma alternativa escolhida por nome). `Ctrl+Q` ou `Alt+F4` encerra. Para abrir em uma janela:
 
 ```sh
 NOCTURNE_WINDOWED=1 NOCTURNE_WIDTH=1280 NOCTURNE_HEIGHT=720 ./scripts/run-preview.sh
@@ -152,7 +152,7 @@ O greeter lê um catálogo escrito por root em `/var/lib/nocturne-greeter/sessio
 
 ## Compatibilidade e documentação
 
-O alvo atual é **Arch Linux x86_64 com sessões Wayland**. O uso no sistema do autor complementa os testes em VM; a compatibilidade com outras distribuições, GPUs e configurações de múltiplos monitores depende de validação específica. Sessões X11 de `/usr/share/xsessions` não são oferecidas.
+O alvo da 1.0 é a **estação Arch Linux x86_64 / Wayland do autor, com um monitor**. Outras GPUs, configurações físicas com vários monitores, hotplug, escalas diferentes entre monitores e outras distribuições ficam fora do escopo de suporte desta versão. Esses casos não são pendências de lançamento. Sessões X11 de `/usr/share/xsessions` não são oferecidas.
 
 - [Instalação, manutenção e resultados da versão 0.9](docs/INSTALL_0.9.md)
 - [Validação de login real e boot em VM — 0.8](docs/REAL_LOGIN_VM_0.8.md)
@@ -184,7 +184,7 @@ tags de versão, preservando os artefatos. O harness interativo também precisa
 de KWin; os testes automatizados de protocolo usam Cage headless e dispensam
 um desktop. AUR e outras distribuições ficam fora deste fluxo de release.
 
-- [Mudanças e resultados da versão 0.9.1](CHANGELOG.md)
+- [Notas e resultados da versão 1.0](CHANGELOG.md)
 - [Matriz de compatibilidade e configuração de monitor/teclado](docs/COMPATIBILITY.md)
 - [Atualização do Qt, login em texto e recuperação](docs/UPGRADE_RECOVERY.md)
 

@@ -54,11 +54,14 @@ known-good plugin, and both launcher branches with stub processes. Seven
 Python recovery tests cover catalog ownership, malformed data, numeric
 selection, session environment, and launcher routing. It never runs PAM.
 
-## VM acceptance procedure
+## VM maintenance procedure
 
 The metadata mismatch, agreety/PAM recovery, restoration and reboot cycle
 passed on 2026-10-29; see [COMPATIBILITY.md](COMPATIBILITY.md). Repeat for
-future Qt changes. A full matching Qt package upgrade/downgrade remains open.
+future Qt changes. A complete Qt package upgrade/downgrade was not part of
+this validation; the deterministic preflight and recovery fault tests are the
+accepted 1.0 coverage. Checking future package transactions is maintenance,
+not an outstanding release gate.
 
 Use a disposable snapshot and keep the guest agent or a second guest TTY
 open. Install the new package, merge its config, verify graphical login and

@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.0.0 — 2026-10-29
+
+Functional baseline closed for the owner's existing Arch Linux x86_64 / Wayland
+workstation with one monitor. Authentication, sessions, power, keyboard menu
+controls, Qt preflight, text login recovery, MIT licensing, package generation
+and CI are complete within that scope. No interface changes are included.
+
+- Other GPUs, physical multi-monitor/hotplug configurations and mixed-monitor
+  scaling are excluded from release acceptance at the owner's request.
+- The support record distinguishes tested evidence from out-of-scope hardware;
+  excluded cases were not relabeled as passing tests.
+- Qt mismatch and damaged-plugin tests plus the real VM text-login recovery
+  cycle are accepted coverage. Future Qt/Quickshell package transactions are
+  maintenance checks rather than remaining 1.0 tasks.
+- The existing BR ABNT2 host configuration was confirmed through read-only
+  inventory; this is configuration evidence, not an additional physical test.
+- Package and checkout instructions now target `1.0.0-1` / `v1.0.0`.
+
+The functional code is unchanged from 0.9.1. The automated release suite and
+package checks are rerun for this snapshot. Detailed evidence and scope:
+[COMPATIBILITY.md](docs/COMPATIBILITY.md). Future interface work builds on this
+baseline as a separate change.
+
 ## 0.9.1 — 2026-10-29
 
 Stabilization release for Arch Linux x86_64 and Wayland. Hardware coverage is
@@ -35,10 +58,10 @@ module restoration, reboot and another graphical login/logout. The release
 package `0.9.1-1` also built locally from a clean committed snapshot and passed
 content/license checks plus both packaged launch-gate scenarios.
 
-Still open before broader 1.0 acceptance: physical multi-monitor/hotplug and
-mixed HiDPI, broader Intel/AMD/NVIDIA coverage, physical BR ABNT2, and a full
-matching Qt package upgrade/downgrade exercise. VM mismatch injection is
-recorded separately from an actual Qt package transaction.
+The initial proposal for broader 1.0 acceptance included a hardware matrix
+and a full Qt package transaction. The owner later excluded other GPUs and
+multi-monitor testing; the 1.0 support scope and accepted recovery coverage
+above supersede that proposed checklist. Recorded test results are unchanged.
 
 Existing installations must merge any `greetd.toml.pacnew` to use
 `/usr/lib/nocturne-greeter/nocturne-greeter-start`. See

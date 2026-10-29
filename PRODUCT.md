@@ -26,13 +26,17 @@ black celestial body. Original vector identity, installed typefaces, visible
 keyboard focus and mouse affordances. Normal UI hides developer shortcuts.
 
 ## Scope
-Version 0.9.1 includes real greetd/PAM authentication, local users and Wayland
+Version 1.0.0 includes real greetd/PAM authentication, local users and Wayland
 sessions, persistent selection, power actions, complete menu keyboard controls,
 explicit output selection and text login recovery when Qt preflight fails.
 The Arch package, tests, CI and snapshot release tooling are part of the product.
 The interface is currently English. X11 and other distributions are outside
-the release target. Hardware compatibility claims follow docs/COMPATIBILITY.md;
-virtual outputs and VM tests do not certify physical GPUs or monitors.
+the release target. The supported deployment is the owner's existing
+workstation with one monitor. Additional GPUs, physical multi-monitor/hotplug
+and mixed-monitor scaling are outside the 1.0 scope, not release blockers.
+Virtual-output tests remain regression fixtures. Maintenance of Qt integration
+and future interface improvements are separate from this functional baseline.
+Acceptance evidence and its limits are recorded in docs/COMPATIBILITY.md.
 
 ## License
 MIT for this repository's original code and assets. Dependencies and system

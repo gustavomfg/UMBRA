@@ -5,7 +5,7 @@
 # when a Qt/Quickshell upgrade breaks it, and a rebuild fixes it.
 
 pkgname=nocturne-greeter
-pkgver=0.9.1
+pkgver=1.0.0
 pkgrel=1
 pkgdesc="Umbra: a Quickshell greeter for greetd with a presentation-gated session launch"
 arch=('x86_64')

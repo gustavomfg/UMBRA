@@ -1,8 +1,23 @@
 # Compatibility and acceptance matrix
 
-Target: **Arch Linux x86_64, greetd, Cage and Wayland sessions**. A passing
-mock, virtual output or VM test does not certify a physical GPU, monitor or
-keyboard. Other distributions and X11 sessions are outside this release.
+## Closed 1.0 support scope
+
+Version **1.0.0** closes the functional baseline for the owner's existing
+**Arch Linux x86_64 / Wayland workstation with one monitor**, using greetd,
+Cage and the distribution's PAM configuration. Existing workstation use is
+recorded in [the 0.9 report](INSTALL_0.9.md); the release checks and disposable
+VM exercise the code, package and recovery paths.
+
+On 2026-10-29 the owner explicitly excluded testing other GPUs and physical
+multi-monitor setups from completion. Those configurations, physical hotplug
+and mixed-monitor scaling are outside this release's support scope. They are
+not an unfinished checklist and no additional hardware testing is required
+for this baseline. X11, other distributions and laptop-specific hardware
+certification are also outside the target.
+
+The completed virtual-output and HiDPI checks remain regression evidence;
+they are not a claim of physical hardware certification. No test result was
+changed from untested to passed when narrowing the scope.
 
 ## Validation on 2026-10-29
 
@@ -16,7 +31,7 @@ keyboard. Other distributions and X11 sessions are outside this release.
 | Presentation barrier | Headless Cage, exact freshly built module | Exactly one launch after `black-commit-presented` |
 | Missing module | Forced absent import even if a system module is installed | Zero launch requests |
 | Two outputs | Cage headless, two virtual 1280×720 outputs | Auth capture passed; selected `HEADLESS-2`, outputs=2 |
-| Screen preference and disconnect/reconnect | Selector tests: preferred connector, origin, name fallback, empty outputs | Passed; physical hotplug pending |
+| Screen preference and disconnect/reconnect | Selector tests: preferred connector, origin, name fallback, empty outputs | Passed for selector behavior; physical hotplug outside scope |
 | Visual layout | Qt captures: 1280×720 logical at 150%, 3440×1440 at 100% | Inspected; no clipping in auth composition |
 | Package upgrade | Disposable QEMU/KVM guest; package built as ordinary user, installed with guarded helper | Passed |
 | Real graphical login/logout | Guest greetd/PAM → Foot test Wayland session → greeter | Passed, black-frame markers in order |
@@ -32,20 +47,23 @@ original qcow2 disk. The upgrade first exercised the new runtime under the
 previous package version, before the release metadata bump. Final package
 validation is recorded in the release notes.
 
-The VM suite does **not** simulate a full pacman Qt upgrade/downgrade. It
-injects the same detected version mismatch and tests recovery, then restores
-the matching module. A full matching-package rollback is still a release
-acceptance task.
+## Accepted coverage and maintenance
 
-## Physical hardware cases still open
+The VM suite injects a Qt version mismatch, verifies text login recovery,
+and restores the matching module. It does **not** simulate a complete pacman
+Qt upgrade/downgrade. This is an explicit limit of the evidence, not a 1.0
+release gate. Rebuild and check the greeter after future Qt/Quickshell
+updates using [UPGRADE_RECOVERY.md](UPGRADE_RECOVERY.md).
 
-| Case | Acceptance criterion | Status |
-| --- | --- | --- |
-| Intel, AMD and NVIDIA pre-login rendering | Boot, shader, keyboard, login/logout, VT recovery | Owner's existing workstation use documented in 0.9; broader matrix pending |
-| Multiple physical monitors / hotplug | Chosen connector has UI and focus; unplug/replug recovers; launch gate follows actual window | Pending |
-| HiDPI / mixed physical scales | Readable text, correct targets and focus; no clipped menus | Virtual scale checked; physical validation pending |
-| US / BR ABNT2 keyboards | Matching pre-login layout, accented characters and symbols, login with a disposable account | US guest input checked; physical ABNT2 pending |
-| Laptop suspend/resume and power policy | Recovery after suspend and clear outcome under inhibitors | Historical VM results in 0.9; physical matrix pending |
+Keyboard evidence includes real US-layout input in the guest and the existing
+workstation's configured `br-abnt2` console keymap / `br` X11 layout (read-only
+`localectl status`, 2026-10-29). The latter confirms configuration, not a new
+physical login test. The baseline relies on the existing workstation use and
+the typed-input/PAM regression tests; a separate keyboard hardware matrix is
+not part of this release.
+
+Suspend/reboot/power-off results remain recorded in the historical VM report.
+No additional laptop or power-inhibitor certification is claimed.
 
 ## Monitor and keyboard configuration
 
@@ -86,8 +104,8 @@ serials. Review it before sharing. The interactive harness still uses nested
 KWin; `--headless` uses Cage and does not need an existing desktop. Its virtual
 outputs are 1280×720; custom fixture dimensions require KWin.
 
-For each physical run, record date, package versions, GPU/driver, connector,
-scale, keyboard map, boot/login/logout, failure and rollback results. Use a
-maintenance TTY and disposable credentials. [UPGRADE_RECOVERY.md](UPGRADE_RECOVERY.md)
-contains the recovery procedure. Do not mark an untested row as passing when
-publishing the release.
+For maintenance checks on the supported workstation, record the package and
+Qt versions and verify login/logout and independent TTY recovery. The owner
+has excluded other GPUs and multi-monitor acceptance runs; do not recreate
+those as release blockers. [UPGRADE_RECOVERY.md](UPGRADE_RECOVERY.md) contains
+the maintenance and recovery procedure.
