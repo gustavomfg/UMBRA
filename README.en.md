@@ -1,10 +1,10 @@
-# Nocturne Greeter — Umbra 0.9
+# Nocturne Greeter — Umbra 0.9.1
 
 [Português (Brasil)](README.md) · English
 
 A greeter for Wayland sessions, built with **Quickshell, QML and GLSL** and integrated with **greetd + PAM**. The interface combines an obsidian body, animated orbital matter and a minimal sign-in screen.
 
-**Ready for use on Arch Linux.** Version `0.9.0-2` is installed and in use on the author's system, following validation of real login, sessions, power actions and boot in a disposable VM.
+**Arch Linux x86_64 / Wayland — version `0.9.1-1`.** This release adds complete menu keyboard navigation, explicit output selection, Qt compatibility preflight and text login recovery through agreety. The earlier `0.9.0-2` was already in use on the author's workstation. See the [validation matrix](docs/COMPATIBILITY.md) for tested cases and remaining hardware coverage.
 
 ![Nocturne Greeter Umbra sign-in screen](docs/screenshots/nocturne-umbra-auth.png)
 
@@ -20,13 +20,15 @@ A greeter for Wayland sessions, built with **Quickshell, QML and GLSL** and inte
 - Responsive layout, keyboard navigation, clock and orbital shader.
 - An Arch Linux package with the presentation module, greetd configuration and pacman hooks.
 - An in-session preview and an isolated Wayland harness for development.
+- Arrow/Home/End menu navigation, visible focus and focus restoration.
+- Text login recovery when the presentation module needs rebuilding after a Qt update.
 
 ## Installation on Arch Linux
 
 Clone the repository and build the local package:
 
 ```sh
-git clone --branch feat/real-login-vm https://github.com/gustavomfg/nocturne-greeter.git
+git clone --branch v0.9.1 https://github.com/gustavomfg/nocturne-greeter.git
 cd nocturne-greeter/packaging/arch
 makepkg -sif
 ```
@@ -37,9 +39,11 @@ The package installs the interface in `/usr/share/nocturne-greeter` and configur
 
 Before switching login managers, save your work and open a TTY with `Ctrl+Alt+F3`. The [installation, activation and recovery runbook](docs/INSTALL_0.9.md#item-5-runbook--install-on-this-workstation) explains how to test the greeter and make it the default login screen. Its example uses `plasmalogin`; replace that with your current login manager's service when necessary.
 
+If upgrading from 0.9.0, merge any `greetd.toml.pacnew` so the configured command uses `nocturne-greeter-start`. See [upgrade and recovery](docs/UPGRADE_RECOVERY.md).
+
 ### Maintenance and diagnostics
 
-After Qt or Quickshell updates, the package hook checks whether the presentation module still loads. If it becomes incompatible, rebuild and reinstall:
+After Qt or Quickshell updates, the package hook checks the exact Qt build version and loads the presentation module. A failed startup preflight offers text login through agreety. Rebuild and reinstall to restore the graphical login:
 
 ```sh
 cd packaging/arch   # from the repository root
@@ -68,6 +72,7 @@ sudo /usr/lib/nocturne-greeter/nocturne-greeter-sessions
 - Type your password and press `Enter` or click the arrow to sign in.
 - `Esc` closes an open menu or returns to idle and clears the password.
 - The power menu offers suspend, restart and shut down.
+- Use `Tab` to reach a menu button, `Enter` or `Space` to open it, arrows or `Home`/`End` to navigate, and `Enter`/`Space` to select. `Escape` closes the menu and restores focus; `Tab` closes it and moves to the next control.
 
 The interface is in English; dates follow the Qt locale. Fonts are **Noto Sans Light**, **Adwaita Sans** and, in debug mode, **Adwaita Mono**.
 
@@ -103,10 +108,11 @@ Run these commands from the repository root:
 ./scripts/test-launch-gate-e2e.sh
 ./scripts/test-launch-gate-e2e.sh --no-probe
 ./scripts/test-real-login-vm-guard.sh
-python3 -I -m unittest discover -s tests -p 'test_sessions_catalog.py'
+python3 -I -m unittest discover -s tests -p 'test_*.py'
+./scripts/test-upgrade-recovery.sh
 ```
 
-Tests cover interface states, keyboard input and focus, user and session catalogs, greetd protocol integration and blocking session launch when the presentation module is unavailable. Protocol and launch tests use nested KWin Wayland and a socket fixture, without authenticating real users.
+Tests cover interface states, keyboard input and focus, user and session catalogs, greetd protocol integration and blocking session launch when the presentation module is unavailable. Protocol and launch tests use headless Cage and a socket fixture, without authenticating real users.
 
 ### Isolated harness
 
@@ -156,3 +162,34 @@ The current target is **Arch Linux x86_64 with Wayland sessions**. Use on the au
 - [Visual system](DESIGN.md), [visual review](docs/ART_DIRECTION_REVIEW.md) and [references](docs/REFERENCE_NOTES.md) (in Portuguese)
 
 Numbered reports preserve the context of each development stage. To recover previous versions, use Git history; local snapshots in `backups/` are not distributed.
+
+## Release checks and artifacts
+
+```sh
+./scripts/check-release.sh
+./scripts/build-release.sh
+```
+
+Run as a regular user with the dependencies declared in the PKGBUILD, plus
+`base-devel`, `git`, `ripgrep` and `dbus` for the checks. Interactive nested
+previews additionally need KWin.
+The release builder requires a clean Git checkout. It archives the exact
+commit, builds the Arch package from that snapshot, checks its contents and
+executes the packaged presentation gate against an IPC fixture. `dist/`
+contains the source archive, package and SHA-256 checksums. Source archives are
+deterministic per commit; binary builds record the rolling Arch toolchain in
+`.BUILDINFO`. No package is installed by these commands.
+
+GitHub Actions runs these checks on main, pull requests and version tags,
+retaining the artifacts. Interactive nested harness runs additionally need
+KWin; automated protocol tests use Cage headless and do not need a desktop.
+AUR packaging and other distributions are outside this release workflow.
+
+- [0.9.1 changes and acceptance results](CHANGELOG.md)
+- [Compatibility matrix and output/keyboard configuration](docs/COMPATIBILITY.md)
+- [Qt upgrades, text fallback and recovery](docs/UPGRADE_RECOVERY.md)
+
+## License
+
+Original code and assets are available under the [MIT license](LICENSE).
+System dependencies and fonts retain their respective licenses.

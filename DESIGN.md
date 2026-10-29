@@ -10,6 +10,7 @@ colors:
   lilac: "#A78BFA"
   purple: "#8B5CF6"
   graphite: "#111116"
+  menu-active: "#1C1C24"
   outline: "#34343D"
   surface-edge: "#292930"
 typography:
@@ -160,11 +161,11 @@ Alvo circular de 40 unidades, ícone de 19 unidades. O submit amplia o alvo a 44
 
 ### Password
 
-Pontos de 5 unidades, espaçamento de 10 unidades, corte pela largura disponível. O TextInput nativo mantém teclado, acessibilidade e proteção de senha, enquanto a representação gráfica evita a caixa convencional. O último ponto responde com escala máxima 1.16; não há flash. Linha de foco cresce de 18 para 42 unidades em 240 ms OutCubic. Enter envia à simulação, Escape retorna ao idle; Ctrl+Enter aciona o sucesso de preview. O segredo não vira texto de debug.
+Pontos de 5 unidades, espaçamento de 10 unidades, corte pela largura disponível. O TextInput nativo mantém teclado, acessibilidade e proteção de senha, enquanto a representação gráfica evita a caixa convencional. O último ponto responde com escala máxima 1.16; não há flash. Linha de foco cresce de 18 para 42 unidades em 240 ms OutCubic. Enter envia a resposta ao backend ativo; Escape cancela e retorna ao idle. Somente no preview, Ctrl+Enter aciona o sucesso simulado. O segredo não vira texto de debug.
 
 ### Session and system status
 
-Hostname e sessão ficam à esquerda; rede, áudio, bateria quando presente e power ficam à direita. Valores detalhados aparecem em tooltips. A sessão mostra o ambiente atual; power abre opções desativadas no preview. Popovers têm grafite, contorno fino e 18 unidades de inset, com fade de 240 ms OutCubic e deslocamento vinculado de 10 px. Não há cartões de widgets independentes.
+Hostname e sessão ficam à esquerda; rede, áudio, bateria quando presente e power ficam à direita. Valores detalhados aparecem em tooltips. Na produção, a sessão vem do catálogo administrativo e o menu de energia executa ações reais. No preview, a sessão mostra o ambiente atual e as ações de energia ficam desativadas. Popovers têm grafite, contorno fino e 18 unidades de inset, com fade de 240 ms OutCubic e deslocamento vinculado de 10 px. Os menus aceitam setas, Home/End e Enter/Espaço; foco tem contorno lilás e superfície `menu-active`. Escape devolve o foco ao botão de origem; Tab fecha e avança. Não há cartões de widgets independentes.
 
 ### Clock / authentication exchange
 

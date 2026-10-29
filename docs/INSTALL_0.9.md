@@ -1,5 +1,10 @@
 # Nocturne Greeter 0.9 — Users, sessions, package and host install
 
+> Historical 0.9.0 results. For 0.9.1, use [upgrade/recovery](UPGRADE_RECOVERY.md),
+> the [compatibility matrix](COMPATIBILITY.md) and [release notes](../CHANGELOG.md).
+> The new launcher offers agreety if Qt preflight fails; the old limitation
+> below requiring a separate TTY for every module mismatch describes 0.9.0.
+
 **Status:** ready for use on Arch Linux. Items 1–4 were implemented and
 proven in the disposable VM (2026-10-17). As of 2026-10-18, the owner confirms
 use on the real workstation; package `0.9.0-2` is installed and

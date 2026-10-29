@@ -1,10 +1,10 @@
-# Nocturne Greeter — Umbra 0.9
+# Nocturne Greeter — Umbra 0.9.1
 
 Português (Brasil) · [English](README.en.md)
 
 Greeter para sessões Wayland, construído com **Quickshell, QML e GLSL** e integrado ao **greetd + PAM**. A interface combina um corpo obsidiano, matéria orbital animada e uma tela de autenticação minimalista.
 
-**Pronto para uso no Arch Linux.** A versão `0.9.0-2` está instalada e em uso no sistema do autor, após validação de login real, sessões, energia e boot em uma VM descartável.
+**Arch Linux x86_64 / Wayland — versão `0.9.1-1`.** Esta versão completa a navegação dos menus por teclado, acrescenta seleção explícita de monitor, checagem de compatibilidade com Qt e recuperação por login em texto via agreety. A versão anterior `0.9.0-2` já era usada no sistema do autor. Consulte a [matriz de validação](docs/COMPATIBILITY.md) para os casos testados e a cobertura física ainda pendente.
 
 ![Tela de autenticação do Nocturne Greeter Umbra](docs/screenshots/nocturne-umbra-auth.png)
 
@@ -20,13 +20,15 @@ Greeter para sessões Wayland, construído com **Quickshell, QML e GLSL** e inte
 - Layout responsivo, navegação por teclado, relógio e shader orbital.
 - Pacote Arch Linux com módulo de apresentação, configuração do greetd e hooks do pacman.
 - Preview na sessão atual e harness Wayland isolado para desenvolvimento.
+- Menus com setas, Home/End, foco visível e retorno do foco ao fechar.
+- Recuperação por login em texto quando uma atualização do Qt exige recompilar o módulo de apresentação.
 
 ## Instalação no Arch Linux
 
 Clone o repositório e compile o pacote local:
 
 ```sh
-git clone --branch feat/real-login-vm https://github.com/gustavomfg/nocturne-greeter.git
+git clone --branch v0.9.1 https://github.com/gustavomfg/nocturne-greeter.git
 cd nocturne-greeter/packaging/arch
 makepkg -sif
 ```
@@ -37,9 +39,11 @@ O pacote instala a interface em `/usr/share/nocturne-greeter` e configura o serv
 
 Antes de trocar o gerenciador de login, salve seu trabalho e abra uma TTY com `Ctrl+Alt+F3`. O roteiro de [instalação, ativação e recuperação](docs/INSTALL_0.9.md#item-5-runbook--install-on-this-workstation) mostra como testar o greeter e torná-lo o login padrão; o exemplo usa `plasmalogin`, que deve ser substituído pelo serviço do seu gerenciador atual quando necessário.
 
+Ao atualizar da 0.9.0, incorpore eventuais alterações de `greetd.toml.pacnew` para que o comando configurado use `nocturne-greeter-start`. Veja [atualização e recuperação](docs/UPGRADE_RECOVERY.md).
+
 ### Manutenção e diagnóstico
 
-Após atualizar Qt ou Quickshell, o hook do pacote verifica se o módulo de apresentação ainda carrega. Se houver incompatibilidade, recompile e reinstale:
+Após atualizar Qt ou Quickshell, o hook verifica a versão exata do Qt e o carregamento do módulo de apresentação. Se a checagem de inicialização falhar, o greeter oferece login em texto pelo agreety. Recompile e reinstale para recuperar o login gráfico:
 
 ```sh
 cd packaging/arch   # a partir da raiz do clone
@@ -68,6 +72,7 @@ sudo /usr/lib/nocturne-greeter/nocturne-greeter-sessions
 - Digite a senha e pressione `Enter` ou clique na seta para entrar.
 - `Esc` fecha um menu aberto ou retorna ao repouso e limpa a senha.
 - O menu de energia oferece suspender, reiniciar e desligar.
+- Use `Tab` para chegar ao botão de um menu, `Enter` ou `Espaço` para abrir, setas ou `Home`/`End` para navegar e `Enter`/`Espaço` para selecionar. `Esc` fecha e devolve o foco; `Tab` fecha e avança ao próximo controle.
 
 A interface está em inglês; a data segue o locale do Qt. As fontes usadas são **Noto Sans Light**, **Adwaita Sans** e, no debug, **Adwaita Mono**.
 
@@ -103,10 +108,11 @@ Os comandos abaixo partem da raiz do clone:
 ./scripts/test-launch-gate-e2e.sh
 ./scripts/test-launch-gate-e2e.sh --no-probe
 ./scripts/test-real-login-vm-guard.sh
-python3 -I -m unittest discover -s tests -p 'test_sessions_catalog.py'
+python3 -I -m unittest discover -s tests -p 'test_*.py'
+./scripts/test-upgrade-recovery.sh
 ```
 
-Os testes cobrem estados da interface, teclado e foco, catálogo de usuários e sessões, integração com o protocolo greetd e bloqueio do lançamento sem o módulo de apresentação. Os testes de protocolo e de lançamento usam KWin Wayland aninhado e um socket fixture, sem autenticar usuários reais.
+Os testes cobrem estados da interface, teclado e foco, catálogo de usuários e sessões, integração com o protocolo greetd e bloqueio do lançamento sem o módulo de apresentação. Os testes de protocolo e de lançamento usam Cage sem janela de desktop e um socket fixture, sem autenticar usuários reais.
 
 ### Harness isolado
 
@@ -116,7 +122,7 @@ Os testes cobrem estados da interface, teclado e foco, catálogo de usuários e 
 ./scripts/run-isolated-greeter.sh --no-session-bus --duration 10
 ```
 
-O harness abre um KWin Wayland aninhado, com runtime, socket e D-Bus próprios e backend mock. `Ctrl+C` no terminal encerra; os logs ficam em `logs/isolated-greeter/`.
+O harness interativo abre um KWin Wayland aninhado, com runtime, socket e D-Bus próprios e backend mock. `Ctrl+C` no terminal encerra; os logs ficam em `logs/isolated-greeter/`.
 
 ### Capturas
 
@@ -156,3 +162,33 @@ O alvo atual é **Arch Linux x86_64 com sessões Wayland**. O uso no sistema do 
 - [Sistema visual](DESIGN.md), [revisão visual](docs/ART_DIRECTION_REVIEW.md) e [referências](docs/REFERENCE_NOTES.md)
 
 Os relatórios numerados preservam o contexto de cada etapa do desenvolvimento. Para recuperar versões anteriores, use o histórico Git; os snapshots locais em `backups/` não são distribuídos.
+
+## Verificação e artefatos da release
+
+```sh
+./scripts/check-release.sh
+./scripts/build-release.sh
+```
+
+Execute como usuário comum com as dependências declaradas no PKGBUILD e
+`base-devel`, `git`, `ripgrep` e `dbus` para as verificações. Previews
+interativos aninhados também precisam de KWin. O gerador de release exige um checkout Git limpo, arquiva o commit
+exato, compila o pacote Arch desse snapshot, verifica seu conteúdo e exercita
+a barreira de apresentação empacotada com um fixture IPC. `dist/` recebe o
+arquivo-fonte, o pacote e os checksums SHA-256. O arquivo-fonte é determinístico
+por commit; o pacote binário registra a toolchain Arch em `.BUILDINFO`.
+Esses comandos não instalam pacotes.
+
+O GitHub Actions executa essas verificações na main, em pull requests e em
+tags de versão, preservando os artefatos. O harness interativo também precisa
+de KWin; os testes automatizados de protocolo usam Cage headless e dispensam
+um desktop. AUR e outras distribuições ficam fora deste fluxo de release.
+
+- [Mudanças e resultados da versão 0.9.1](CHANGELOG.md)
+- [Matriz de compatibilidade e configuração de monitor/teclado](docs/COMPATIBILITY.md)
+- [Atualização do Qt, login em texto e recuperação](docs/UPGRADE_RECOVERY.md)
+
+## Licença
+
+Código e assets originais sob a [licença MIT](LICENSE).
+Dependências do sistema e fontes mantêm suas próprias licenças.
