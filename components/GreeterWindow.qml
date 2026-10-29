@@ -27,6 +27,7 @@ FloatingWindow {
     property bool previewShortcutsEnabled: false
     property string sessionContextText: "Selected session"
     property string powerUnavailableText: "Unavailable"
+    property string audioUnavailableText: "Audio unavailable"
     property string windowTitle: "Nocturne Umbra"
     property var sessionOptions: []
     property int selectedSessionIndex: -1
@@ -198,6 +199,7 @@ FloatingWindow {
             desktopSession: window.statusModel ? window.statusModel.desktopSession : "Local session"
             sessionContextText: window.sessionContextText
             powerUnavailableText: window.powerUnavailableText
+            audioUnavailableText: window.audioUnavailableText
             networkAvailable: window.statusModel ? window.statusModel.networkAvailable : false
             online: window.statusModel ? window.statusModel.online : false
             audioAvailable: window.statusModel ? window.statusModel.audioAvailable : false

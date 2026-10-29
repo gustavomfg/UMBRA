@@ -1,5 +1,17 @@
 # Changelog
 
+## After 1.0.0 — package revision 1.0.0-2
+
+- Remove the Nocturne symbol and wordmark from the greeter header.
+- Keep network and audio indicators visible beside Power when services are
+  unavailable, with explicit tooltips and no simulated volume/mute state.
+- Observe NetworkManager's system service before login. User-session PipeWire
+  is not loaded by the production greeter; its audio indicator explains that
+  pre-login audio is unavailable. Preview continues to show live session audio.
+- Cover unavailable/connected/disconnected/volume/mute states in QML and check
+  indicator visibility in the actual production/package launch fixture.
+
+
 ## 1.0.0 — 2026-10-29
 
 Functional baseline closed for the owner's existing Arch Linux x86_64 / Wayland

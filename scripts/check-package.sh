@@ -8,7 +8,7 @@ trap 'rm -r -- "$work"' EXIT
 bsdtar -xf "$package" -C "$work"
 share="$work/usr/share/nocturne-greeter"
 module="$work/usr/lib/qt6/qml/Nocturne/Presentation"
-for file in shell.qml components/GreetdAuthenticator.qml components/SessionLaunchGate.qml shaders/pulse.frag.qsb; do
+for file in shell.qml components/GreetdAuthenticator.qml components/GreeterSystemStatus.qml components/SessionLaunchGate.qml shaders/pulse.frag.qsb; do
     test -s "$share/$file"
 done
 for helper in nocturne-greeter-start nocturne-greeter-check nocturne-recovery-session nocturne-greeter-sessions; do

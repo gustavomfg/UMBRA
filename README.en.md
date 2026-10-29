@@ -4,7 +4,7 @@
 
 A greeter for Wayland sessions, built with **Quickshell, QML and GLSL** and integrated with **greetd + PAM**. The interface combines an obsidian body, animated orbital matter and a minimal sign-in screen.
 
-**Version `1.0.0-1` — functional baseline complete for the owner's Arch Linux x86_64 / Wayland workstation with one monitor.** Real login, menu keyboard navigation, Qt compatibility preflight, text login recovery and packaging have been validated. Other GPUs and physical multi-monitor setups are outside this release's scope. See the [support scope and validation record](docs/COMPATIBILITY.md).
+**Version `1.0.0-2` — functional baseline complete for the owner's Arch Linux x86_64 / Wayland workstation with one monitor.** Real login, menu keyboard navigation, Qt compatibility preflight, text login recovery and packaging have been validated. Other GPUs and physical multi-monitor setups are outside this release's scope. See the [support scope and validation record](docs/COMPATIBILITY.md).
 
 ![Nocturne Greeter Umbra sign-in screen](docs/screenshots/nocturne-umbra-auth.png)
 
@@ -18,6 +18,7 @@ A greeter for Wayland sessions, built with **Quickshell, QML and GLSL** and inte
 - Suspend, restart and shut down from the login screen.
 - An animated transition into the session, released only after the compositor presents the black frame.
 - Responsive layout, keyboard navigation, clock and orbital shader.
+- A clear header and persistent read-only network/audio indicators beside Power. Before login, network status comes from NetworkManager; audio reports that it is unavailable until the user session starts.
 - An Arch Linux package with the presentation module, greetd configuration and pacman hooks.
 - An in-session preview and an isolated Wayland harness for development.
 - Arrow/Home/End menu navigation, visible focus and focus restoration.
@@ -28,7 +29,7 @@ A greeter for Wayland sessions, built with **Quickshell, QML and GLSL** and inte
 Clone the repository and build the local package:
 
 ```sh
-git clone --branch v1.0.0 https://github.com/gustavomfg/nocturne-greeter.git
+git clone --branch main https://github.com/gustavomfg/nocturne-greeter.git
 cd nocturne-greeter/packaging/arch
 makepkg -sif
 ```

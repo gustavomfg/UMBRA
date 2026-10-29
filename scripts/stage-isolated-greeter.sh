@@ -30,6 +30,7 @@ common_components=(
     GreeterCatalog.qml
     GreeterController.qml
     GreeterWindow.qml
+    GreeterSystemStatus.qml
     IconButton.qml
     SessionLaunchGate.qml
     SessionLaunchPolicy.qml

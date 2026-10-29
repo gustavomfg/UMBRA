@@ -6,7 +6,7 @@
 
 pkgname=nocturne-greeter
 pkgver=1.0.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Umbra: a Quickshell greeter for greetd with a presentation-gated session launch"
 arch=('x86_64')
 license=('MIT')
@@ -58,7 +58,7 @@ package() {
     for component in \
         AuthPanel.qml AuthenticatorBridge.qml ClockDisplay.qml CosmicScene.qml \
         GreetdAuthenticator.qml GreeterCatalog.qml GreeterController.qml \
-        GreeterWindow.qml IconButton.qml SessionLaunchGate.qml \
+        GreeterWindow.qml GreeterSystemStatus.qml IconButton.qml SessionLaunchGate.qml \
         SessionLaunchPolicy.qml SystemChrome.qml greeter-model.js; do
         install -Dm644 "$repo/components/$component" "$share/components/$component"
     done

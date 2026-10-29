@@ -8,12 +8,30 @@ Item {
     visible: false
 
     property var controller
+    property var chrome
     property var authPanel
 
     Timer {
         interval: 600
         running: true
         onTriggered: {
+            function find(item, name) {
+                if (item.objectName === name) return item;
+                for (let child of item.children || []) {
+                    const found = find(child, name);
+                    if (found) return found;
+                }
+                return null;
+            }
+            const network = find(root.chrome, "networkIndicator");
+            const audio = find(root.chrome, "audioIndicator");
+            if (!network || !audio || !network.visible || !audio.visible
+                    || network.interactive || audio.interactive) {
+                console.error("e2e: status indicators missing or interactive");
+                Qt.exit(1);
+                return;
+            }
+            console.info("e2e: status indicators visible and read-only");
             console.info("e2e: wake");
             root.controller.wake();
             submitTimer.start();

@@ -176,6 +176,55 @@ TestCase {
         powerSpy.clear();
     }
 
+    function test_statusIndicatorsRemainVisibleWithoutServices() {
+        chrome.networkAvailable = false;
+        chrome.audioAvailable = false;
+        chrome.online = true; // Stale values must not appear as live status.
+        chrome.audioMuted = true;
+        chrome.volumePercent = 73;
+        const network = findChild(chrome, "networkIndicator");
+        const audio = findChild(chrome, "audioIndicator");
+        const power = findChild(chrome, "powerButton");
+        verify(network.visible);
+        verify(audio.visible);
+        compare(network.label, "Network status unavailable");
+        compare(audio.label, "Audio unavailable");
+        verify(audio.icon.endsWith("/audio.svg"));
+        verify(!network.interactive && !audio.interactive);
+        verify(!network.activeFocusOnTab && !audio.activeFocusOnTab);
+        verify(network.mapToItem(chrome, 0, 0).x < audio.mapToItem(chrome, 0, 0).x);
+        verify(audio.mapToItem(chrome, 0, 0).x < power.mapToItem(chrome, 0, 0).x);
+        mouseClick(audio, audio.width / 2, audio.height / 2);
+        compare(powerSpy.count, 0);
+        verify(!chrome.powerMenuOpen);
+        chrome.online = false;
+        chrome.audioMuted = false;
+        chrome.volumePercent = 0;
+    }
+
+    function test_statusIndicatorsUpdateWhenServicesAreAvailable() {
+        const network = findChild(chrome, "networkIndicator");
+        const audio = findChild(chrome, "audioIndicator");
+        chrome.networkAvailable = true;
+        chrome.online = true;
+        compare(network.label, "Connected");
+        chrome.online = false;
+        compare(network.label, "No connection");
+        chrome.audioAvailable = true;
+        chrome.volumePercent = 42;
+        compare(audio.label, "Volume 42%");
+        chrome.audioMuted = true;
+        compare(audio.label, "Muted");
+        verify(audio.icon.endsWith("/muted.svg"));
+        chrome.audioAvailable = false;
+        chrome.audioUnavailableText = "Audio unavailable before sign-in";
+        compare(audio.label, "Audio unavailable before sign-in");
+        chrome.audioUnavailableText = "Audio unavailable";
+        chrome.networkAvailable = false;
+        chrome.audioMuted = false;
+        chrome.volumePercent = 0;
+    }
+
     function test_keyboardSessionMenu() {
         const button = findChild(chrome, "sessionButton");
         button.forceActiveFocus();

@@ -10,6 +10,7 @@ Item {
     property string desktopSession: "Local session"
     property string sessionContextText: "Selected session"
     property string powerUnavailableText: "Unavailable"
+    property string audioUnavailableText: "Audio unavailable"
     property bool networkAvailable: false
     property bool online: false
     property bool audioAvailable: false
@@ -210,16 +211,16 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         spacing: 5 * root.scaleFactor
         IconButton {
-            visible: root.networkAvailable
+            objectName: "networkIndicator"
             icon: "../assets/icons/network.svg"
-            label: root.online ? "Connected" : "No connection"
+            label: !root.networkAvailable ? "Network status unavailable" : root.online ? "Connected" : "No connection"
             scaleFactor: root.scaleFactor
             interactive: false
         }
         IconButton {
-            visible: root.audioAvailable
-            icon: root.audioMuted ? "../assets/icons/muted.svg" : "../assets/icons/audio.svg"
-            label: root.audioMuted ? "Muted" : "Volume " + root.volumePercent + "%"
+            objectName: "audioIndicator"
+            icon: root.audioAvailable && root.audioMuted ? "../assets/icons/muted.svg" : "../assets/icons/audio.svg"
+            label: !root.audioAvailable ? root.audioUnavailableText : root.audioMuted ? "Muted" : "Volume " + root.volumePercent + "%"
             scaleFactor: root.scaleFactor
             interactive: false
         }

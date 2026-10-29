@@ -75,7 +75,7 @@ else:
     # An installed module must not defeat the missing-probe fault injection.
     probe = 'import Nocturne.AbsentPresentationForTest; PresentationProbe {}'
 source = source.replace('"import Nocturne.Presentation; PresentationProbe {}"', json.dumps(probe))
-driver = "\n    E2EDriver {\n        controller: greeter.controller\n        authPanel: greeter.authPanel\n    }\n}\n"
+driver = "\n    E2EDriver {\n        controller: greeter.controller\n        authPanel: greeter.authPanel\n        chrome: greeter.chrome\n    }\n}\n"
 open(sys.argv[2], "w", encoding="utf-8").write(source[:-1] + driver)
 PY
 
@@ -120,6 +120,8 @@ import json, re, sys
 
 status = json.load(open(sys.argv[1], encoding="utf-8"))
 log = re.sub(r"\x1b\[[0-9;]*m", "", open(sys.argv[2], encoding="utf-8", errors="replace").read())
+if "e2e: status indicators visible and read-only" not in log:
+    raise SystemExit("FAIL: production status indicators were not verified")
 with_probe = sys.argv[3] == "1"
 markers = re.findall(r"nocturne-launch: ([a-z-]+)", log)
 print("Fixture: create_session={create_session} start_session={start_session}".format(**status))

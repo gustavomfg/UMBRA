@@ -6,7 +6,7 @@ import "components"
 
 // Pre-login entrypoint run by greetd (as the `greeter` service identity) from
 // a root-owned install tree. No preview shortcuts, capture, debug overlay,
-// mock backend or live user services are loaded here.
+// mock backend or user-session audio services are loaded here.
 ShellRoot {
     id: root
 
@@ -50,17 +50,9 @@ ShellRoot {
         sessionCommandPrefix: policy.sessionCommandPrefix
     }
 
-    // Pre-login has no user services: only the selected session is shown.
-    QtObject {
-        id: staticStatus
-        readonly property string desktopSession: catalog.selectedSessionName
-        readonly property bool networkAvailable: false
-        readonly property bool online: false
-        readonly property bool audioAvailable: false
-        readonly property bool audioMuted: false
-        readonly property int volumePercent: 0
-        readonly property bool batteryAvailable: false
-        readonly property int batteryPercent: 0
+    GreeterSystemStatus {
+        id: systemStatus
+        desktopSession: catalog.selectedSessionName
     }
 
     GreetdAuthenticator {
@@ -74,13 +66,14 @@ ShellRoot {
         username: catalog.selectedUserName
         loginUser: catalog.selectedUserId
         hostname: catalog.hostname
-        statusModel: staticStatus
+        statusModel: systemStatus
         promptText: boundary.promptText
         responseRequired: boundary.responseRequired
         echoResponse: boundary.echoResponse
         previewShortcutsEnabled: false
         sessionContextText: "Session"
         powerUnavailableText: "Unavailable"
+        audioUnavailableText: "Audio unavailable before sign-in"
         windowTitle: "Nocturne Umbra"
         sessionOptions: catalog.sessions
         selectedSessionIndex: catalog.selectedSessionIndex

@@ -4,7 +4,7 @@ Português (Brasil) · [English](README.en.md)
 
 Greeter para sessões Wayland, construído com **Quickshell, QML e GLSL** e integrado ao **greetd + PAM**. A interface combina um corpo obsidiano, matéria orbital animada e uma tela de autenticação minimalista.
 
-**Versão `1.0.0-1` — base funcional concluída para a estação Arch Linux x86_64 / Wayland do autor, com um monitor.** Login real, navegação dos menus por teclado, checagem de compatibilidade com Qt, recuperação por login em texto e empacotamento foram validados. Outras GPUs e configurações físicas com vários monitores ficam fora do escopo desta versão. Veja o [escopo de suporte e os resultados de validação](docs/COMPATIBILITY.md).
+**Versão `1.0.0-2` — base funcional concluída para a estação Arch Linux x86_64 / Wayland do autor, com um monitor.** Login real, navegação dos menus por teclado, checagem de compatibilidade com Qt, recuperação por login em texto e empacotamento foram validados. Outras GPUs e configurações físicas com vários monitores ficam fora do escopo desta versão. Veja o [escopo de suporte e os resultados de validação](docs/COMPATIBILITY.md).
 
 ![Tela de autenticação do Nocturne Greeter Umbra](docs/screenshots/nocturne-umbra-auth.png)
 
@@ -18,6 +18,7 @@ Greeter para sessões Wayland, construído com **Quickshell, QML e GLSL** e inte
 - Suspender, reiniciar e desligar pela tela de login.
 - Transição animada para a sessão, liberada somente após a apresentação do quadro preto pelo compositor.
 - Layout responsivo, navegação por teclado, relógio e shader orbital.
+- Topo livre e indicadores de rede/áudio sempre visíveis ao lado de energia, somente para leitura. Antes do login, a rede vem do NetworkManager; o áudio informa indisponibilidade até a sessão do usuário iniciar.
 - Pacote Arch Linux com módulo de apresentação, configuração do greetd e hooks do pacman.
 - Preview na sessão atual e harness Wayland isolado para desenvolvimento.
 - Menus com setas, Home/End, foco visível e retorno do foco ao fechar.
@@ -28,7 +29,7 @@ Greeter para sessões Wayland, construído com **Quickshell, QML e GLSL** e inte
 Clone o repositório e compile o pacote local:
 
 ```sh
-git clone --branch v1.0.0 https://github.com/gustavomfg/nocturne-greeter.git
+git clone --branch main https://github.com/gustavomfg/nocturne-greeter.git
 cd nocturne-greeter/packaging/arch
 makepkg -sif
 ```
