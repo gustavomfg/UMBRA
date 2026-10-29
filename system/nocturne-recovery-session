@@ -1,0 +1,79 @@
+#!/usr/bin/python3 -I
+"""Text recovery session, run by greetd AFTER agreety/PAM authenticates.
+
+Only root's existing session catalog supplies argv; input selects a numeric
+entry, never a command. No passwords are read by this helper.
+"""
+import json
+import os
+from pathlib import Path
+import re
+import stat
+import sys
+
+CATALOG = Path('/var/lib/nocturne-greeter/sessions.json')
+
+
+def trusted_file(path):
+    path = path.resolve(strict=True)
+    for part in (path, *path.parents):
+        info = part.stat()
+        if info.st_uid != 0 or info.st_mode & 0o022:
+            raise ValueError('session catalog and its parents must be root-owned and not writable by others')
+    if not stat.S_ISREG(path.stat().st_mode):
+        raise ValueError('session catalog must be a regular file')
+    return path
+
+
+def load_sessions(path=CATALOG):
+    data = json.loads(trusted_file(path).read_text(encoding='utf-8'))
+    if not isinstance(data, dict) or data.get('version') != 1 or not isinstance(data.get('sessions'), list):
+        raise ValueError('invalid session catalog')
+    result = []
+    for entry in data['sessions']:
+        if not isinstance(entry, dict):
+            raise ValueError('invalid session entry')
+        command = entry.get('command')
+        names = entry.get('desktopNames', [])
+        name = entry.get('name', '')
+        if (not isinstance(entry.get('id'), str) or not re.fullmatch(r'[A-Za-z0-9._-]{1,128}', entry['id'])
+                or not isinstance(name, str) or not 1 <= len(name) <= 80 or any(ord(c) < 32 or ord(c) == 127 for c in name)
+                or entry.get('type', 'wayland') != 'wayland'
+                or not isinstance(command, list) or not 1 <= len(command) <= 64
+                or any(not isinstance(arg, str) or not arg or len(arg) > 4096 or '\0' in arg for arg in command)
+                or not command[0].startswith('/')
+                or not isinstance(names, list)
+                or any(not isinstance(n, str) or not re.fullmatch(r'[A-Za-z0-9._-]{1,64}', n) for n in names)):
+            raise ValueError('invalid session entry')
+        result.append(entry)
+    if not result:
+        raise ValueError('no Wayland sessions available; regenerate the catalog as root')
+    return result
+
+
+def choose_session(sessions, read=input):
+    print('Nocturne recovery — choose a Wayland session:')
+    for index, entry in enumerate(sessions, 1):
+        print(f"  {index}. {entry['name']}")
+    while True:
+        value = read('Session [1]: ').strip() or '1'
+        if value.isascii() and value.isdigit() and len(value) <= 4 and 1 <= int(value) <= len(sessions):
+            return sessions[int(value) - 1]
+        print('Enter one of the session numbers above.')
+
+
+def main():
+    try:
+        entry = choose_session(load_sessions())
+        environment = os.environ.copy()
+        environment['XDG_SESSION_TYPE'] = 'wayland'
+        environment['XDG_SESSION_DESKTOP'] = entry['id']
+        environment['XDG_CURRENT_DESKTOP'] = ':'.join(entry.get('desktopNames', []))
+        os.execve('/usr/bin/systemd-cat', ['systemd-cat', '--identifier=nocturne-session', '--', *entry['command']], environment)
+    except (OSError, ValueError, EOFError, KeyboardInterrupt) as error:
+        print(f'Nocturne recovery: {error}', file=sys.stderr)
+        return 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())

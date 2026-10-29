@@ -1,27 +1,49 @@
 #!/bin/bash
-# Verifies that Nocturne.Presentation loads with the installed Qt. Without it
-# the greeter blocks every session launch (fail closed), so warn loudly.
-set -u
-probe_qml="$(mktemp --suffix=.qml)"
-trap 'rm -f -- "$probe_qml"' EXIT
-cat > "$probe_qml" <<'QML'
+# --hook reports warnings without failing a completed pacman transaction.
+# Every normal invocation returns nonzero when rebuilding is required.
+set -euo pipefail
+hook=0
+module_dir=/usr/lib/qt6/qml/Nocturne/Presentation
+while (($#)); do
+    case "$1" in
+        --hook) hook=1; shift ;;
+        --strict) shift ;;
+        --module-dir) module_dir="${2:?missing module directory}"; shift 2 ;;
+        *) echo "Usage: $0 [--hook|--strict] [--module-dir PATH]" >&2; exit 2 ;;
+    esac
+done
+fail() {
+    printf '%s\n' "nocturne-greeter: $1" >&2
+    printf '%s\n' 'Rebuild and reinstall nocturne-greeter (makepkg -sif). Text login is available through agreety until then.' >&2
+    if ((hook)); then exit 0; else exit 1; fi
+}
+[[ -r "$module_dir/qt-version" ]] || fail 'presentation build metadata is missing'
+built_qt="$(cat "$module_dir/qt-version")"
+runtime_qt="$(/usr/lib/qt6/bin/qtpaths --qt-version)" || fail 'cannot determine the installed Qt version'
+[[ "$built_qt" == "$runtime_qt" ]] || fail "presentation module was built for Qt $built_qt; installed Qt is $runtime_qt"
+probe_dir="$(mktemp -d)"
+trap 'rm -r -- "$probe_dir"' EXIT
+module_url="$(python3 -I -c 'from pathlib import Path; import json, sys; print(json.dumps(Path(sys.argv[1]).resolve().as_uri()))' "$module_dir")"
+printf 'import %s as Presentation\n' "$module_url" > "$probe_dir/shell.qml"
+cat >> "$probe_dir/shell.qml" <<'QML'
 import QtQuick
-import Nocturne.Presentation
-Item {
-    PresentationProbe { id: probe }
-    Component.onCompleted: Qt.quit()
+import Quickshell
+import Quickshell.Services.Greetd
+ShellRoot {
+    Presentation.PresentationProbe {}
+    Timer { interval: 1; running: true; onTriggered: Qt.quit() }
 }
 QML
-if output="$(QT_QPA_PLATFORM=offscreen timeout 20 /usr/lib/qt6/bin/qml "$probe_qml" 2>&1)" \
-    && ! grep -qiE 'not installed|cannot load|failed|is not a type' <<< "$output"; then
-    echo "nocturne-greeter: presentation module OK"
-    exit 0
+# Check the actual Quickshell loader/API, without a Wayland window or PAM.
+# Override the import path only for checking a locally built module.
+import_root="$(realpath "$module_dir/../..")"
+if ! output="$(env -u GREETD_SOCK -u WAYLAND_DISPLAY QT_QPA_PLATFORM=offscreen QML_IMPORT_PATH="$import_root:/usr/lib/qt6/qml" QML2_IMPORT_PATH="$import_root:/usr/lib/qt6/qml" \
+    timeout 20 /usr/bin/quickshell --no-duplicate --path "$probe_dir" 2>&1)"; then
+    printf '%s\n' "$output" | tail -8 >&2
+    fail 'presentation module or Quickshell API failed to load'
 fi
-cat >&2 <<'MSG'
-==> WARNING: nocturne-greeter's presentation module no longer loads with the
-==> installed Qt/Quickshell. The greeter will refuse to start sessions until
-==> the nocturne-greeter package is rebuilt and reinstalled (makepkg -si).
-==> Use another TTY (Ctrl+Alt+F3) to log in meanwhile.
-MSG
-printf '%s\n' "$output" | tail -5 >&2
-exit 0
+if grep -qiE 'not installed|cannot load|failed|is not a type|ERROR' <<< "$output"; then
+    printf '%s\n' "$output" | tail -8 >&2
+    fail 'presentation module or Quickshell API failed to load'
+fi
+echo 'nocturne-greeter: presentation module and Qt version OK'

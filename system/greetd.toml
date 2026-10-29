@@ -1,10 +1,9 @@
 # Nocturne greeter for greetd. Installed by the nocturne-greeter package and
-# selected by greetd.service.d/nocturne-greeter.conf. systemd-cat keeps
-# compositor and QML logs in the journal (identifier nocturne-greeter)
-# instead of printing them on the VT.
+# selected by greetd.service.d/nocturne-greeter.conf. The launcher checks Qt
+# compatibility and offers agreety text login if a rebuild is needed.
 [terminal]
 vt = 1
 
 [default_session]
-command = "systemd-cat --identifier=nocturne-greeter -- env XDG_CACHE_HOME=/var/cache/nocturne-greeter cage -s -- /usr/bin/quickshell --no-duplicate --path /usr/share/nocturne-greeter"
+command = "/usr/lib/nocturne-greeter/nocturne-greeter-start"
 user = "greeter"

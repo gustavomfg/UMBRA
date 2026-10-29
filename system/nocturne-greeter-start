@@ -1,0 +1,11 @@
+#!/bin/bash
+# greetd owns stdin/stdout (the VT). Keep the recovery greeter outside
+# systemd-cat so its login prompt is visible when the graphical check fails.
+set -euo pipefail
+if /usr/lib/nocturne-greeter/nocturne-greeter-check; then
+    exec /usr/bin/systemd-cat --identifier=nocturne-greeter -- \
+        /usr/bin/env XDG_CACHE_HOME=/var/cache/nocturne-greeter \
+        /usr/bin/cage -s -- /usr/bin/quickshell --no-duplicate --path /usr/share/nocturne-greeter
+fi
+printf '\nNocturne needs a rebuild after an update. Starting text login.\n'
+exec /usr/bin/agreety --cmd /usr/lib/nocturne-greeter/nocturne-recovery-session

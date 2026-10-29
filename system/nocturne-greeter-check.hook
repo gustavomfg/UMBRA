@@ -9,4 +9,4 @@ Target = quickshell
 [Action]
 Description = Checking that the Nocturne presentation module still loads...
 When = PostTransaction
-Exec = /usr/lib/nocturne-greeter/nocturne-greeter-check
+Exec = /usr/lib/nocturne-greeter/nocturne-greeter-check --hook

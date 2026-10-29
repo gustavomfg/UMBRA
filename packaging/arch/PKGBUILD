@@ -12,6 +12,7 @@ arch=('x86_64')
 license=('unknown')
 depends=(
     'greetd'
+    'greetd-agreety'
     'cage'
     'quickshell'
     'qt6-base'
@@ -64,8 +65,11 @@ package() {
 
     install -Dm644 -t "$pkgdir/usr/lib/qt6/qml/Nocturne/Presentation" \
         "$srcdir/build/qml/Nocturne/Presentation/libnocturnepresentation.so" \
-        "$srcdir/build/qml/Nocturne/Presentation/qmldir"
+        "$srcdir/build/qml/Nocturne/Presentation/qmldir" \
+        "$srcdir/build/qml/Nocturne/Presentation/qt-version"
 
+    install -Dm755 -t "$pkgdir/usr/lib/nocturne-greeter" \
+        "$repo/system/nocturne-greeter-start" "$repo/system/nocturne-recovery-session"
     install -Dm755 "$repo/system/nocturne-greeter-sessions" "$pkgdir/usr/lib/nocturne-greeter/nocturne-greeter-sessions"
     install -Dm755 "$repo/system/nocturne-greeter-check" "$pkgdir/usr/lib/nocturne-greeter/nocturne-greeter-check"
     install -Dm644 "$repo/system/nocturne-greeter-sessions.hook" "$pkgdir/usr/share/libalpm/hooks/nocturne-greeter-sessions.hook"

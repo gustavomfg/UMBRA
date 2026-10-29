@@ -35,5 +35,6 @@ c++ -std=c++17 -shared -fPIC -O2 -Wall -Wextra \
     "${qt_libs[@]}" \
     -o "$module_dir/libnocturnepresentation.so"
 cp -- "$source_dir/qmldir" "$module_dir/qmldir"
+printf '%s\n' "$qt_version" > "$module_dir/qt-version"
 
 printf 'Built Nocturne.Presentation for Qt %s at %s\n' "$qt_version" "$module_dir"
