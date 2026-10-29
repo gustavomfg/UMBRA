@@ -1,0 +1,51 @@
+name: Arch release checks
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  arch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container: archlinux:base-devel
+    steps:
+      - name: Install Arch build and test dependencies
+        run: >-
+          pacman -Syu --noconfirm --needed git python quickshell greetd
+          greetd-agreety cage qt6-base qt6-declarative qt6-wayland qt6-svg
+          qt6-shadertools wayland wayland-protocols pkgconf adwaita-fonts
+          noto-fonts mesa dbus ripgrep
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Prepare an unprivileged build user
+        run: |
+          useradd --create-home builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+          install -d -m700 -o builder -g builder /tmp/nocturne-ci-runtime
+      - name: Test QML, protocol, presentation and recovery
+        run: runuser -u builder -- env XDG_RUNTIME_DIR=/tmp/nocturne-ci-runtime ./scripts/check-release.sh
+      - name: Build and inspect the committed release snapshot
+        run: runuser -u builder -- env XDG_RUNTIME_DIR=/tmp/nocturne-ci-runtime ./scripts/build-release.sh
+      - name: Retain package, source and checksums
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: nocturne-arch-${{ github.sha }}
+          path: |
+            dist/*
+            build/compatibility.json
+          if-no-files-found: error
+      - name: Retain isolated fixture diagnostics
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fixture-diagnostics-${{ github.sha }}
+          path: logs/isolated-greeter/
+          if-no-files-found: ignore

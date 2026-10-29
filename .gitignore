@@ -24,3 +24,9 @@ __pycache__/
 # Pre-Git prototype kept locally
 shell-v01.qml
 build/
+
+# Release and makepkg output
+dist/
+packaging/arch/src/
+packaging/arch/pkg/
+packaging/arch/*.pkg.tar.*

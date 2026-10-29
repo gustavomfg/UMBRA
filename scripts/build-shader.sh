@@ -14,4 +14,4 @@ if [[ -z "$qsb_bin" ]]; then
 fi
 
 "$qsb_bin" --qt6 "$project_root/shaders/pulse.frag" \
-    -o "$project_root/shaders/pulse.frag.qsb"
+    -o "${NOCTURNE_SHADER_OUTPUT:-$project_root/shaders/pulse.frag.qsb}"

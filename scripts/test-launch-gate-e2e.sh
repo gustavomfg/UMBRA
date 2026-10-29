@@ -14,7 +14,14 @@ if [[ "${1:-}" == --no-probe ]]; then
     with_probe=0
 fi
 
-if ((with_probe)) && [[ ! -f "$project_root/build/qml/Nocturne/Presentation/libnocturnepresentation.so" ]]; then
+resource_root="$project_root"
+greeter_entry="$project_root/greeter/shell.qml"
+probe_module="$project_root/build/qml/Nocturne/Presentation"
+if [[ -n "${NOCTURNE_TEST_INSTALL_ROOT:-}" ]]; then
+    resource_root="$NOCTURNE_TEST_INSTALL_ROOT/usr/share/nocturne-greeter"
+    greeter_entry="$resource_root/shell.qml"
+    probe_module="$NOCTURNE_TEST_INSTALL_ROOT/usr/lib/qt6/qml/Nocturne/Presentation"
+elif ((with_probe)) && [[ ! -f "$probe_module/libnocturnepresentation.so" ]]; then
     "$project_root/scripts/build-presentation-probe.sh" >/dev/null
 fi
 
@@ -32,7 +39,7 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir -m 700 "$run_root/runtime" "$run_root/stage" "$run_root/stage/components"
-cp -- "$project_root/components/"*.qml "$project_root/components/"*.js "$run_root/stage/components/"
+cp -- "$resource_root/components/"*.qml "$resource_root/components/"*.js "$run_root/stage/components/"
 sed "s|@RUN@|$run_root|g" "$project_root/tests/launch-e2e/SessionLaunchPolicy.qml" > "$run_root/stage/components/SessionLaunchPolicy.qml"
 mkdir -m 700 "$run_root/fixture"
 cat > "$run_root/fixture/passwd" <<'PASSWD'
@@ -54,9 +61,9 @@ JSON
 # Last selection picks the second session; the default user is the first.
 printf '{"version": 1, "user": "launch-fixture", "session": "fixture-session"}\n' > "$run_root/fixture/state.json"
 cp -- "$project_root/tests/launch-e2e/E2EDriver.qml" "$run_root/stage/E2EDriver.qml"
-cp -a -- "$project_root/assets" "$project_root/shaders" "$run_root/stage/"
+cp -a -- "$resource_root/assets" "$resource_root/shaders" "$run_root/stage/"
 # Inject the driver as the last child of ShellRoot.
-python3 - "$project_root/greeter/shell.qml" "$run_root/stage/shell.qml" "$with_probe" "$project_root/build/qml/Nocturne/Presentation" <<'PY'
+python3 - "$greeter_entry" "$run_root/stage/shell.qml" "$with_probe" "$probe_module" <<'PY'
 import json, pathlib, sys
 source = open(sys.argv[1], encoding="utf-8").read().rstrip()
 assert source.endswith("}")

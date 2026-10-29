@@ -5,11 +5,12 @@
 # when a Qt/Quickshell upgrade breaks it, and a rebuild fixes it.
 
 pkgname=nocturne-greeter
-pkgver=0.9.0
-pkgrel=2
+pkgver=0.9.1
+pkgrel=1
 pkgdesc="Umbra: a Quickshell greeter for greetd with a presentation-gated session launch"
 arch=('x86_64')
-license=('unknown')
+license=('MIT')
+url='https://github.com/gustavomfg/nocturne-greeter'
 depends=(
     'greetd'
     'greetd-agreety'
@@ -24,7 +25,7 @@ depends=(
     'adwaita-fonts'
     'noto-fonts'
 )
-makedepends=('wayland-protocols' 'pkgconf' 'gcc')
+makedepends=('wayland-protocols' 'pkgconf' 'gcc' 'qt6-shadertools')
 backup=('etc/nocturne-greeter/greetd.toml')
 options=('!debug')
 install=nocturne-greeter.install
@@ -37,12 +38,13 @@ _repo() {
 
 build() {
     NOCTURNE_BUILD_DIR="$srcdir/build" "$(_repo)/scripts/build-presentation-probe.sh"
+    NOCTURNE_SHADER_OUTPUT="$srcdir/build/pulse.frag.qsb" "$(_repo)/scripts/build-shader.sh"
 }
 
 check() {
     local repo
     repo="$(_repo)"
-    python3 -I -m unittest discover -s "$repo/tests" -p 'test_sessions_catalog.py' -q
+    python3 -I -m unittest discover -s "$repo/tests" -p 'test_*.py' -q
 }
 
 package() {
@@ -50,6 +52,7 @@ package() {
     repo="$(_repo)"
     share="$pkgdir/usr/share/nocturne-greeter"
 
+    install -Dm644 "$repo/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
     install -Dm644 "$repo/greeter/shell.qml" "$share/shell.qml"
     local component
     for component in \
@@ -61,7 +64,7 @@ package() {
     done
     install -Dm644 "$repo/assets/nocturne-mark.svg" "$share/assets/nocturne-mark.svg"
     install -Dm644 -t "$share/assets/icons" "$repo"/assets/icons/*.svg
-    install -Dm644 "$repo/shaders/pulse.frag.qsb" "$share/shaders/pulse.frag.qsb"
+    install -Dm644 "$srcdir/build/pulse.frag.qsb" "$share/shaders/pulse.frag.qsb"
 
     install -Dm644 -t "$pkgdir/usr/lib/qt6/qml/Nocturne/Presentation" \
         "$srcdir/build/qml/Nocturne/Presentation/libnocturnepresentation.so" \
