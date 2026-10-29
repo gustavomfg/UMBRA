@@ -95,7 +95,7 @@ Preto, grafite e cinzas frios sustentam uma única família de acento violeta.
 ### Neutral
 
 - **Black:** fundo integral e destino do sucesso.
-- **Text:** relógio, usuário e identidade NOCTURNE.
+- **Text:** relógio e identidade do usuário.
 - **Secondary:** data, greeting, ícones e sessão.
 - **Quiet:** hostname e hints secundários.
 - **Placeholder:** convite idle e texto do campo vazio.
@@ -121,7 +121,7 @@ As medidas dos tokens são pixels lógicos na escala base. Tamanhos, tracking e 
 - **Body:** greeting e campo de senha, sem uppercase.
 - **Date:** data local e título do popover de sessão.
 - **Label:** hints e identificação de sistema.
-- **Wordmark:** único título com uppercase e tracking largo; alinhado à marca.
+- **Wordmark:** token da identidade visual; a tela de login não exibe a marca no topo.
 
 Os convites idle e as linhas de power usam o tamanho da wordmark sem seu peso/tracking. Notas dos popovers atualmente usam 11 px; debug usa 10 px. São exceções observadas, não um novo padrão de texto funcional pequeno. O tooltip mantém 12 px sem multiplicar a escala.
 
@@ -129,7 +129,7 @@ Os convites idle e as linhas de power usam o tamanho da wordmark sem seu peso/tr
 
 ## Layout
 
-A composição implementada tem marca no canto superior esquerdo, coluna editorial à esquerda, fenômeno à direita e dois pequenos grupos de controles no rodapé. Não há painel envolvendo a autenticação nem linha contínua de status.
+A composição implementada tem coluna editorial à esquerda, fenômeno à direita e dois pequenos grupos de controles no rodapé. O topo permanece livre, sem símbolo ou texto NOCTURNE. Não há painel envolvendo a autenticação nem linha contínua de status.
 
 - `uiScale = clamp(height / 900, 1, 1.35)`.
 - Margem lateral: `clamp(width × 0.075, 42, 220)`.
@@ -187,7 +187,7 @@ Estados de transição usam timer de shader de 33 ms. Animações QML de proprie
 
 ### Do:
 
-- Do manter a coluna editorial alinhada à marca e à identidade da máquina.
+- Do manter a coluna editorial alinhada à identidade da máquina no rodapé.
 - Do usar o foco lilás e o alvo circular dos controles existentes.
 - Do revelar identidade, senha e hint na sequência do controlador, preservando o foco imediato.
 - Do verificar as mudanças em capturas reais do QML em cada proporção suportada.

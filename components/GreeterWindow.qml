@@ -134,27 +134,6 @@ FloatingWindow {
                 window.shaderTime += elapsed * (1 - greeterController.authenticationTension * .82);
             }
         }
-        Row {
-            x: window.edgeMargin
-            y: Math.max(36, canvas.height * .065)
-            spacing: 14 * window.uiScale
-            opacity: window.successPresence(.30, .78, greeterController.successProgress)
-            Image {
-                source: "../assets/nocturne-mark.svg"
-                width: 30 * window.uiScale
-                height: width
-                sourceSize: Qt.size(120, 120)
-            }
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "NOCTURNE"
-                color: "#F2F2F3"
-                font.family: "Adwaita Sans"
-                font.pixelSize: 13 * window.uiScale
-                font.weight: Font.Medium
-                font.letterSpacing: 3.5 * window.uiScale
-            }
-        }
         Item {
             id: editorial
             x: window.edgeMargin
