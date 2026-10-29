@@ -161,6 +161,74 @@ TestCase {
         powerSpy.clear();
     }
 
+    function test_keyboardSessionMenu() {
+        const button = findChild(chrome, "sessionButton");
+        button.forceActiveFocus();
+        keyClick(Qt.Key_Return);
+        const first = findChild(chrome, "sessionMenu-option-0");
+        const second = findChild(chrome, "sessionMenu-option-1");
+        tryCompare(first, "activeFocus", true);
+        keyClick(Qt.Key_Up); // wrap to the last entry
+        tryCompare(second, "activeFocus", true);
+        keyClick(Qt.Key_Home);
+        tryCompare(first, "activeFocus", true);
+        keyClick(Qt.Key_End);
+        tryCompare(second, "activeFocus", true);
+        keyClick(Qt.Key_Return);
+        compare(sessionSpy.count, 1);
+        compare(sessionSpy.signalArguments[0][0], 1);
+        verify(!chrome.sessionMenuOpen);
+        verify(button.activeFocus);
+    }
+
+    function test_keyboardUserMenuEscapeAndTab() {
+        const button = findChild(chrome, "userButton");
+        button.forceActiveFocus();
+        keyClick(Qt.Key_Space);
+        tryCompare(findChild(chrome, "userMenu-option-0"), "activeFocus", true);
+        keyClick(Qt.Key_Escape);
+        verify(!chrome.userMenuOpen);
+        verify(button.activeFocus);
+        compare(userSpy.count, 0);
+        keyClick(Qt.Key_Return);
+        tryCompare(findChild(chrome, "userMenu-option-0"), "activeFocus", true);
+        keyClick(Qt.Key_Tab);
+        verify(!chrome.userMenuOpen);
+        verify(findChild(chrome, "sessionButton").activeFocus);
+    }
+
+    function test_keyboardUserMenuSelects() {
+        const button = findChild(chrome, "userButton");
+        button.forceActiveFocus();
+        keyClick(Qt.Key_Return);
+        tryCompare(findChild(chrome, "userMenu-option-0"), "activeFocus", true);
+        keyClick(Qt.Key_Down);
+        tryCompare(findChild(chrome, "userMenu-option-1"), "activeFocus", true);
+        keyClick(Qt.Key_Space);
+        compare(userSpy.count, 1);
+        compare(userSpy.signalArguments[0][0], 1);
+        verify(button.activeFocus);
+    }
+
+    function test_keyboardPowerMenu() {
+        const button = findChild(chrome, "powerButton");
+        button.forceActiveFocus();
+        keyClick(Qt.Key_Return);
+        tryCompare(findChild(chrome, "power-suspend"), "activeFocus", true);
+        keyClick(Qt.Key_Down);
+        tryCompare(findChild(chrome, "power-reboot"), "activeFocus", true);
+        keyClick(Qt.Key_Return);
+        compare(powerSpy.count, 1);
+        compare(powerSpy.signalArguments[0][0], "reboot");
+        verify(button.activeFocus);
+        chrome.powerActionsEnabled = false;
+        keyClick(Qt.Key_Return);
+        wait(300);
+        verify(!findChild(chrome, "power-reboot").enabled);
+        compare(powerSpy.count, 1);
+        chrome.powerActionsEnabled = true;
+    }
+
     function test_sessionMenuChoosesSession() {
         chrome.sessionMenuOpen = true;
         const menu = findChild(chrome, "sessionMenu");

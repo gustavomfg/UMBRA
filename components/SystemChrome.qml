@@ -31,6 +31,38 @@ Item {
     signal sessionChosen(int index)
     signal userChosen(int index)
     signal powerActionRequested(string action)
+    // A menu owns focus until selection, Escape or Tab. Return focus to its
+    // trigger, so dismissing it never wakes the password field accidentally.
+    function closeMenu(trigger) {
+        dismissMenus();
+        trigger.forceActiveFocus();
+    }
+    function focusOption(repeater, index) {
+        const count = repeater.count;
+        if (count > 0) {
+            const item = repeater.itemAt((index + count) % count);
+            if (item && item.enabled)
+                item.forceActiveFocus();
+        }
+    }
+    function menuKey(event, repeater, index, trigger, activate) {
+        if (event.key === Qt.Key_Down || event.key === Qt.Key_Up) {
+            focusOption(repeater, index + (event.key === Qt.Key_Down ? 1 : -1));
+        } else if (event.key === Qt.Key_Home || event.key === Qt.Key_End) {
+            focusOption(repeater, event.key === Qt.Key_Home ? 0 : repeater.count - 1);
+        } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+            activate();
+        } else if (event.key === Qt.Key_Escape || event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) {
+            closeMenu(trigger);
+            if (event.key !== Qt.Key_Escape)
+                trigger.nextItemInFocusChain(event.key !== Qt.Key_Backtab && !(event.modifiers & Qt.ShiftModifier)).forceActiveFocus();
+        } else {
+            // Do not let a printable key bubble into the idle wake handler.
+            event.accepted = true;
+            return;
+        }
+        event.accepted = true;
+    }
     function dismissMenus() {
         const wasOpen = powerMenuOpen || sessionMenuOpen || userMenuOpen;
         powerMenuOpen = false;
@@ -79,6 +111,8 @@ Item {
             }
             Keys.onReturnPressed: activate()
             Keys.onSpacePressed: activate()
+            Accessible.onPressAction: activate()
+            Keys.onDownPressed: activate()
             Text {
                 id: userLabel
                 anchors.verticalCenter: parent.verticalCenter
@@ -121,6 +155,7 @@ Item {
         }
         Item {
             id: sessionButton
+            objectName: "sessionButton"
             width: sessionLabel.implicitWidth + 24 * root.scaleFactor
             height: 40 * root.scaleFactor
             activeFocusOnTab: true
@@ -133,6 +168,8 @@ Item {
             }
             Keys.onReturnPressed: activate()
             Keys.onSpacePressed: activate()
+            Accessible.onPressAction: activate()
+            Keys.onDownPressed: activate()
             Text {
                 id: sessionLabel
                 anchors.verticalCenter: parent.verticalCenter
@@ -213,6 +250,14 @@ Item {
     }
     Rectangle {
         id: powerMenu
+        objectName: "powerMenu"
+        enabled: root.powerMenuOpen
+        Accessible.role: Accessible.PopupMenu
+        Accessible.name: "Power"
+        onEnabledChanged: {
+            if (enabled && root.powerActionsEnabled)
+                Qt.callLater(() => { if (root.powerMenuOpen) root.focusOption(powerOptions, 0); });
+        }
         anchors.right: parent.right
         anchors.rightMargin: root.rightMargin
         y: -height - 8 * root.scaleFactor + (1 - opacity) * 10
@@ -237,6 +282,7 @@ Item {
             width: parent.width - 36 * root.scaleFactor
             spacing: 15 * root.scaleFactor
             Repeater {
+                id: powerOptions
                 model: [
                     {
                         name: "Sleep",
@@ -257,6 +303,27 @@ Item {
                 delegate: Item {
                     id: powerRow
                     required property var modelData
+                    required property int index
+                    enabled: root.powerMenuOpen && root.powerActionsEnabled
+                    activeFocusOnTab: false
+                    Accessible.role: Accessible.MenuItem
+                    Accessible.name: modelData.name
+                    Accessible.onPressAction: activate()
+                    function activate() {
+                        if (!enabled) return;
+                        root.closeMenu(powerButton);
+                        root.powerActionRequested(modelData.action);
+                    }
+                    Keys.onPressed: event => root.menuKey(event, powerOptions, index, powerButton, activate)
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.margins: -4 * root.scaleFactor
+                        radius: 5 * root.scaleFactor
+                        color: "#1C1C24"
+                        border.color: "#A78BFA"
+                        border.width: 1
+                        visible: powerRow.activeFocus
+                    }
                     objectName: "power-" + modelData.action
                     width: powerRowContent.implicitWidth
                     height: powerRowContent.implicitHeight
@@ -283,8 +350,7 @@ Item {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            root.dismissMenus();
-                            root.powerActionRequested(powerRow.modelData.action);
+                            powerRow.activate();
                         }
                     }
                 }
@@ -304,6 +370,15 @@ Item {
         property int selectedIndex: -1
         property string labelKey: "name"
         property bool open: false
+        required property Item trigger
+        enabled: open
+        Accessible.role: Accessible.PopupMenu
+        Accessible.name: trigger.Accessible.name
+        onOpenChanged: {
+            if (open) Qt.callLater(() => {
+                if (menu.open) root.focusOption(optionsRepeater, Math.max(0, menu.selectedIndex));
+            });
+        }
         signal chosen(int index)
         y: -height - 8 * root.scaleFactor + (1 - opacity) * 10
         width: 260 * root.scaleFactor
@@ -327,15 +402,32 @@ Item {
             width: parent.width - 16 * root.scaleFactor
             spacing: 2 * root.scaleFactor
             Repeater {
+                id: optionsRepeater
                 model: menu.options
                 delegate: Rectangle {
                     id: option
                     required property var modelData
                     required property int index
+                    objectName: menu.objectName + "-option-" + index
+                    enabled: menu.open
+                    activeFocusOnTab: false
+                    Accessible.role: Accessible.MenuItem
+                    Accessible.name: modelData[menu.labelKey]
+                    Accessible.checkable: true
+                    Accessible.checked: index === menu.selectedIndex
+                    Accessible.onPressAction: activate()
+                    function activate() {
+                        if (!enabled) return;
+                        root.closeMenu(menu.trigger);
+                        menu.chosen(index);
+                    }
+                    Keys.onPressed: event => root.menuKey(event, optionsRepeater, index, menu.trigger, activate)
+                    border.width: activeFocus ? 1 : 0
+                    border.color: "#A78BFA"
                     width: optionColumn.width
                     height: 34 * root.scaleFactor
                     radius: 7 * root.scaleFactor
-                    color: optionMouse.containsMouse ? "#1C1C24" : "transparent"
+                    color: optionMouse.containsMouse || activeFocus ? "#1C1C24" : "transparent"
                     Text {
                         x: 12 * root.scaleFactor
                         anchors.verticalCenter: parent.verticalCenter
@@ -362,8 +454,7 @@ Item {
                         cursorShape: Qt.PointingHandCursor
                         enabled: menu.open
                         onClicked: {
-                            root.dismissMenus();
-                            menu.chosen(option.index);
+                            option.activate();
                         }
                     }
                 }
@@ -372,6 +463,7 @@ Item {
     }
     OptionMenu {
         objectName: "userMenu"
+        trigger: userButton
         x: root.leftMargin
         options: root.userOptions
         selectedIndex: root.selectedUserIndex
@@ -381,6 +473,7 @@ Item {
     }
     OptionMenu {
         objectName: "sessionMenu"
+        trigger: sessionButton
         x: root.leftMargin
         visible: opacity > .001 && root.sessionOptions.length > 0
         options: root.sessionOptions
