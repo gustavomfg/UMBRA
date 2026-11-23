@@ -24,7 +24,7 @@ vec3 ring(vec2 p,float sphereZ,float bodyR,float tilt,float offset,float weight)
     float rr=r/(1.-collapse*.50);
     float edge=smoothstep(.77,.81,rr)*(1.-smoothstep(1.40,1.50,rr));
     if(edge<.001 || z<sphereZ) return vec3(0.);
-    float phase=a-time*(.024+ .018/(rr*rr)) + failureProgress*.016*sin(rr*14.);
+    float phase=a-time*(.062+ .044/(rr*rr)) + failureProgress*.016*sin(rr*14.);
     float fine=pow(noise(vec2(rr*245., .7)),2.4);
     float strata=noise(vec2(rr*67.,1.5));
     float gaps=1.-.90*exp(-pow((rr-1.075)*105.,2.));
@@ -45,7 +45,7 @@ void main(){
     vec2 p=(qt_TexCoord0-.5)*2.; p.x*=resolution.x/max(resolution.y,1.);
     float collapse=smoothstep(.2,1.,successProgress);
     p/=1.+authProgress*.035+wakePulse*.009+collapse*.28;
-    p=turn(-.30+.008*sin(time*.055)+failureProgress*.018)*p;
+    p=turn(-.30+.020*sin(time*.11)+failureProgress*.018)*p;
     p.y+=typingPulse*.0018*sin(p.x*5.);
     float R=.545+collapse*.26;
     float d=length(p), aa=2./max(resolution.y,1.);
@@ -55,12 +55,13 @@ void main(){
     // Sparse, faint points only within the object's surrounding negative space.
     vec2 g=p*36., cell=floor(g), local=fract(g)-.5;
     float star=(1.-smoothstep(.012,.048,length(local)))*step(.997,hash21(cell));
-    color+=silver*star*.12*smoothstep(.7,1.0,d)*(1.-smoothstep(1.5,2.,d));
+    float twinkle=.55+.45*sin(time*(.9+hash21(cell+7.)*1.6)+hash21(cell+3.)*40.);
+    color+=silver*star*.13*twinkle*smoothstep(.7,1.0,d)*(1.-smoothstep(1.5,2.,d));
     if(d<R+aa){
         vec3 n=normalize(vec3(p,sqrt(max(0.,R*R-dot(p,p)))));
         vec3 L=normalize(vec3(-.65,-.75,.38));
         float diffuse=max(dot(n,L),0.);
-        float terrain=noise(p*17.+vec2(time*.002,0.))*.65+noise(p*43.)*.35;
+        float terrain=noise(p*17.+vec2(time*.006,0.))*.65+noise(p*43.)*.35;
         float limb=pow(1.-max(n.z,0.),5.5);
         float lit=pow(max(dot(n,L),0.),1.6);
         vec3 surface=vec3(.015,.014,.020)*( .18+diffuse*(.75+.3*terrain));
@@ -68,11 +69,13 @@ void main(){
         surface+=silver*pow(diffuse,5.)*.035*(.4+terrain*.6);
         color=mix(color,surface,mask);
     }
-    color+=ring(p,sphereZ,R,1.12+.012*sin(time*.035),0.,.76);
+    color+=ring(p,sphereZ,R,1.12+.020*sin(time*.07),0.,.76);
     color+=ring(turn(.037)*p,sphereZ,R,1.19,.012,.14);
     float atmosphere=exp(-abs(d-R)*260.)*smoothstep(-.1,.7,-p.x-p.y)*.12;
+    // A slow limb pulse keeps the scene visibly alive while PAM works.
+    atmosphere*=1.+authenticationTension*.55*(.5+.5*sin(time*2.2));
     color+=silver*atmosphere;
-    color*=.985+.015*sin(time*.21);
+    color*=.97+.03*sin(time*.30);
     color*=1.-smoothstep(.58,1.,successProgress);
     fragColor=vec4(color,1.)*qt_Opacity;
 }

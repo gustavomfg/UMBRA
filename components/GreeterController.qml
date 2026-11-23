@@ -206,14 +206,14 @@ Item {
 
         SequentialAnimation {
             PauseAnimation {
-                duration: 160
+                duration: 40
             }
             NumberAnimation {
                 target: root
                 property: "authReveal"
                 from: 0
                 to: 1
-                duration: 840
+                duration: 660
                 easing.type: Easing.OutCubic
             }
         }
@@ -224,7 +224,7 @@ Item {
                 property: "wakeTension"
                 from: 0
                 to: 1
-                duration: 190
+                duration: 160
                 easing.type: Easing.OutCubic
             }
 
@@ -232,14 +232,14 @@ Item {
                 target: root
                 property: "wakeTension"
                 to: 0
-                duration: 820
+                duration: 640
                 easing.type: Easing.InOutSine
             }
         }
 
         SequentialAnimation {
             PauseAnimation {
-                duration: 430
+                duration: 340
             }
             ScriptAction {
                 script: {

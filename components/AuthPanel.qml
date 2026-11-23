@@ -90,13 +90,21 @@ Item {
                     model: root.visiblePasswordDots
                     delegate: Rectangle {
                         required property int index
+                        property real appear: 0
+                        Component.onCompleted: appear = 1
+                        Behavior on appear {
+                            NumberAnimation {
+                                duration: 150
+                                easing.type: Easing.OutCubic
+                            }
+                        }
                         width: 5 * root.scaleFactor
                         height: width
                         radius: width / 2
                         color: "#F2F2F3"
-                        opacity: index === root.visiblePasswordDots - 1 ? .75 + .25 * root.controller.typingPulse : .75
-                        scale: index === root.visiblePasswordDots - 1
-                               ? 1 + root.controller.typingPulse * .16 : 1
+                        opacity: appear * (index === root.visiblePasswordDots - 1 ? .75 + .25 * root.controller.typingPulse : .75)
+                        scale: (.35 + .65 * appear) * (index === root.visiblePasswordDots - 1
+                               ? 1 + root.controller.typingPulse * .16 : 1)
                     }
                 }
             }

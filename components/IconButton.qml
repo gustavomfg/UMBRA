@@ -37,6 +37,11 @@ Item {
         source: root.icon
         sourceSize: Qt.size(width * 2, height * 2)
         opacity: root.enabled ? (pointer.containsMouse || root.activeFocus ? 1 : .8) : .35
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 160
+            }
+        }
         scale: pointer.pressed ? .92 : 1
         Behavior on scale {
             NumberAnimation {
@@ -65,7 +70,15 @@ Item {
         height: 30
         radius: 5
         color: "#111116"
-        visible: pointer.containsMouse && root.label.length > 0 && !root.selected
+        readonly property bool shown: pointer.containsMouse && root.label.length > 0 && !root.selected
+        opacity: shown ? 1 : 0
+        visible: opacity > .001
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 140
+                easing.type: Easing.OutCubic
+            }
+        }
         Text {
             id: tooltip
             anchors.centerIn: parent
