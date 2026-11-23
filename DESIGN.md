@@ -169,19 +169,19 @@ Hostname e sessão ficam à esquerda; rede, áudio, bateria quando presente e po
 
 ### Clock / authentication exchange
 
-A tensão do hero começa no wake. O controlador espera 160 ms e anima `authReveal` por 840 ms OutCubic. O relógio chega a opacidade zero em reveal 0.32; identidade inicia em 0.36, campo em 0.50 e hint em 0.68. O relógio sobe até 18 unidades e reduz escala até 0.975. Identidade, campo e hint têm deslocamentos pequenos, vinculados à mesma revelação. O foco é imediato, independentemente da visibilidade.
+A tensão do hero começa no wake. O controlador espera 40 ms e anima `authReveal` por 660 ms OutCubic. O relógio chega a opacidade zero em reveal 0.32; identidade inicia em 0.36, campo em 0.50 e hint em 0.68. O relógio sobe até 18 unidades e reduz escala até 0.975. Identidade, campo e hint têm deslocamentos pequenos, vinculados à mesma revelação. O foco é imediato, independentemente da visibilidade.
 
 ### Cosmic state response
 
-- **Idle:** tempo orbital lento, breathing e refresh de shader a cada 120 ms.
-- **Wake:** tensão sobe por 190 ms e se dissipa em 820 ms; hero lidera o texto.
-- **Auth:** refresh a cada 65 ms; digitação decai em 280 ms OutCubic e desloca minimamente a geometria.
-- **Authenticating:** tensão anima em 440 ms InOutCubic, reduz velocidade do tempo orbital em até 82% e modula o alinhamento dos estratos.
-- **Failure:** deformação curta de plano; 90 ms de entrada, 360 ms de pausa e 200 ms de saída. Feedback lilás localizado.
+- **Idle:** órbita perceptível (anéis ~0,06 rad/s), oscilação leve do plano, breathing de ±3% e estrelas cintilando.
+- **Wake:** tensão sobe por 160 ms e se dissipa em 640 ms; hero lidera o texto; fase Auth em 340 ms.
+- **Auth:** digitação decai em 280 ms OutCubic e desloca minimamente a geometria; cada ponto da senha entra em 150 ms.
+- **Authenticating:** tensão anima em 440 ms InOutCubic, reduz velocidade do tempo orbital em até 38%, pulsa suavemente o limbo e modula o alinhamento dos estratos.
+- **Failure:** deformação curta de plano; 140 ms de entrada e 260 ms de saída. Feedback lilás localizado.
 - **Success:** 1480 ms InOutCubic; os anéis contraem, a esfera cresce e a luz se apaga. UI some no primeiro terço de progressão. O shader para ao atingir preto.
 - **Return to idle:** reveal e sucesso retornam em 460 ms InOutCubic; tensão em 360 ms OutSine.
 
-Estados de transição usam timer de shader de 33 ms. Animações QML de propriedades também podem invalidar frames fora desse timer; esses valores não são um teto global de FPS. A camada extra de captura só existe com `NOCTURNE_CAPTURE_DIR`.
+O tempo do shader avança por `FrameAnimation`, uma vez por frame renderizado e em sincronia com o vsync; o passo é limitado a 50 ms. A camada extra de captura só existe com `NOCTURNE_CAPTURE_DIR`.
 
 ## Do's and Don'ts
 

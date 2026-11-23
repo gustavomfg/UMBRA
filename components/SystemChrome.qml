@@ -119,6 +119,11 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.selectedUserIndex >= 0 && root.selectedUserIndex < root.userOptions.length ? root.userOptions[root.selectedUserIndex].displayName : ""
                 color: userMouse.containsMouse || userButton.activeFocus ? "#F2F2F3" : "#A6A6B0"
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 140
+                    }
+                }
                 font.family: "Adwaita Sans"
                 font.pixelSize: 12 * root.scaleFactor
             }
@@ -176,6 +181,11 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.desktopSession
                 color: sessionMouse.containsMouse || sessionButton.activeFocus ? "#F2F2F3" : "#A6A6B0"
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 140
+                    }
+                }
                 font.family: "Adwaita Sans"
                 font.pixelSize: 12 * root.scaleFactor
             }
@@ -329,6 +339,11 @@ Item {
                     width: powerRowContent.implicitWidth
                     height: powerRowContent.implicitHeight
                     opacity: root.powerActionsEnabled ? (powerRowMouse.containsMouse ? 1 : .82) : .5
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: 140
+                        }
+                    }
                     Row {
                         id: powerRowContent
                         spacing: 12 * root.scaleFactor
@@ -429,6 +444,11 @@ Item {
                     height: 34 * root.scaleFactor
                     radius: 7 * root.scaleFactor
                     color: optionMouse.containsMouse || activeFocus ? "#1C1C24" : "transparent"
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 120
+                        }
+                    }
                     Text {
                         x: 12 * root.scaleFactor
                         anchors.verticalCenter: parent.verticalCenter

@@ -120,19 +120,15 @@ FloatingWindow {
             successProgress: greeterController.successProgress
             authenticationTension: greeterController.authenticationTension
         }
-        ElapsedTimer {
-            id: shaderElapsed
-            Component.onCompleted: restart()
-        }
-        Timer {
+        FrameAnimation {
             id: shaderClock
-            // Qt Quick Timer intervals are integer milliseconds; elapsed time below keeps motion speed independent of timer jitter.
-            interval: 16
-            repeat: true
+            // Advances once per rendered frame, in step with the render loop's
+            // vsync, so orbital motion never beats against the display refresh.
             running: window.visible && greeterController.successProgress < .999
             onTriggered: {
-                const elapsed = Math.min(shaderElapsed.restart(), .05);
-                window.shaderTime += elapsed * (1 - greeterController.authenticationTension * .82);
+                const elapsed = Math.min(frameTime, .05);
+                // While PAM works the orbit slows but keeps visibly moving.
+                window.shaderTime += elapsed * (1 - greeterController.authenticationTension * .38);
             }
         }
         Item {
