@@ -135,6 +135,15 @@ ShellRoot {
         }
     }
 
+    // Changing the user while a prompt is parked cancels it from idle.
+    Connections {
+        target: greetd
+        function onCancellationPoisonedChanged() {
+            if (greetd.cancellationPoisoned && greeter.controller.isIdle)
+                restartTimer.restart();
+        }
+    }
+
     Timer {
         id: restartTimer
         interval: 400
