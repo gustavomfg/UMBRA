@@ -176,8 +176,8 @@ A tensão do hero começa no wake. O controlador espera 40 ms e anima `authRevea
 - **Idle:** órbita perceptível (anéis ~0,06 rad/s), oscilação leve do plano, breathing de ±3% e estrelas cintilando.
 - **Wake:** tensão sobe por 160 ms e se dissipa em 640 ms; hero lidera o texto; fase Auth em 340 ms.
 - **Auth:** digitação decai em 280 ms OutCubic e desloca minimamente a geometria; cada ponto da senha entra em 150 ms.
-- **Authenticating:** tensão anima em 440 ms InOutCubic, reduz velocidade do tempo orbital em até 38%, pulsa suavemente o limbo e modula o alinhamento dos estratos.
-- **Failure:** deformação curta de plano; 140 ms de entrada e 260 ms de saída. Feedback lilás localizado.
+- **Authenticating:** tensão anima em 360 ms OutCubic; a órbita desacelera para 0,85× e um arco prateado discreto percorre o anel (~3 s por volta). Os pontos da senha ficam visíveis a 45% enquanto o PAM responde.
+- **Failure:** uma única onda lilás atravessa os anéis de dentro para fora em 700 ms InOutSine; a velocidade da órbita recua 1 → 0,6 → 1,4 → 1 na mesma progressão, sem alterar a textura. Os pontos tremem ±6 unidades (2,5 oscilações, 300 ms) e somem em 180 ms; a linha de foco volta a #34343D. "Couldn't sign in. Try again." fica até a próxima tecla. O teclado aceita digitação durante toda a fase.
 - **Success:** 950 ms InOutCubic; os anéis contraem, a esfera cresce e a luz se apaga. UI some no primeiro terço de progressão. O shader para ao atingir preto.
 - **Return to idle:** reveal e sucesso retornam em 460 ms InOutCubic; tensão em 360 ms OutSine.
 

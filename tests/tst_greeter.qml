@@ -218,7 +218,9 @@ TestCase {
         keyClick(Qt.Key_Return, Qt.ControlModifier);
         compare(controller.phase, GreeterController.Authenticating);
         compare(authPanel.inputField.text, "");
-        compare(authPanel.visiblePasswordDots, 0);
+        // The field is cleared; only the dot count is held for the motion.
+        compare(authPanel.heldDots, 1);
+        verify(authPanel.showingHeldDots);
         tryCompare(controller, "phase", GreeterController.Success, 1200);
     }
 
@@ -367,13 +369,13 @@ TestCase {
         verify(controller.authenticationTension < 1);
         verify(controller.acceptsKeyboardInput);
 
-        wait(150);
+        wait(420);
         verify(controller.failureResolving);
         verify(controller.failureProgress > 0 && controller.failureProgress < 1);
         verify(controller.authenticationTension < 1);
+        verify(controller.failureNoticeVisible);
 
-        wait(280);
-        compare(controller.phase, GreeterController.Auth);
+        tryCompare(controller, "phase", GreeterController.Auth, 600);
         compare(controller.failureProgress, 0);
         verify(!controller.failureResolving);
         verify(controller.authenticationTension < .05);

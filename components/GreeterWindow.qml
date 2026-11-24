@@ -127,9 +127,21 @@ FloatingWindow {
         // drops to ~30 fps: a running FrameAnimation makes the render loop
         // draw every vsync, so idle uses a plain timer instead.
         readonly property bool shaderAnimating: window.visible && !window.reducedMotion && greeterController.successProgress < .999
+        // Rejection recoil of the orbit speed: 1 -> 0.6 -> 1.4 -> 1.
+        function recoil(t) {
+            if (t <= 0 || t >= 1)
+                return 1;
+            const ease = u => u * u * (3 - 2 * u);
+            if (t < .12)
+                return 1 - .4 * ease(t / .12);
+            if (t < .38)
+                return .6 + .8 * ease((t - .12) / .26);
+            return 1.4 - .4 * ease((t - .38) / .62);
+        }
         function advanceShader(seconds) {
-            // While PAM works the orbit slows but keeps visibly moving.
-            window.shaderTime += Math.min(seconds, .05) * (1 - greeterController.authenticationTension * .38);
+            // While PAM works the orbit slows slightly (0.85x) but keeps moving.
+            const speed = (1 - greeterController.authenticationTension * .15) * recoil(greeterController.failureProgress);
+            window.shaderTime += Math.min(seconds, .05) * speed;
         }
         FrameAnimation {
             id: shaderClock

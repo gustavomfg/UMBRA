@@ -16,15 +16,70 @@ Item {
     readonly property real identityReveal: Math.max(0, Math.min(1, (controller.authReveal - .36) / .64))
     readonly property real fieldReveal: Math.max(0, Math.min(1, (controller.authReveal - .50) * 2))
     readonly property real hintReveal: Math.max(0, Math.min(1, (controller.authReveal - .68) / .32))
-    readonly property real failureCopyHandoff: .7
+    // Dot count kept after Enter clears the field, so the dots can wait for
+    // PAM and shake on rejection. Only a length; never the secret.
+    property int heldDots: 0
+    property real shake: 0
+    // Crossfade between the hint and "Couldn't sign in".
+    property real failureCopy: controller.failureNoticeVisible ? 1 : 0
+    Behavior on failureCopy {
+        NumberAnimation {
+            duration: 220
+            easing.type: Easing.OutCubic
+        }
+    }
     readonly property bool preparingAuthentication: controller.phase === GreeterController.Authenticating || controller.phase === GreeterController.Success
     readonly property int passwordDotCapacity: Math.max(0, Math.floor((passphraseArea.width - submitButton.width - 18 * root.scaleFactor) / (16 * root.scaleFactor)))
-    readonly property int visiblePasswordDots: echoResponse ? 0 : Math.min(passwordInput.length, passwordDotCapacity)
+    readonly property int visiblePasswordDots: echoResponse ? 0 : Math.min(passwordInput.length > 0 ? passwordInput.length : heldDots, passwordDotCapacity)
+    readonly property bool showingHeldDots: passwordInput.length === 0 && heldDots > 0
     function focusInput() {
         passwordInput.forceActiveFocus();
     }
     function clearInput() {
         passwordInput.clear();
+    }
+    function dropHeldDots() {
+        failureShake.stop();
+        shake = 0;
+        dotsRow.opacity = 1;
+        heldDots = 0;
+    }
+    Connections {
+        target: root.controller
+        function onPhaseChanged() {
+            const phase = root.controller.phase;
+            if (phase === GreeterController.Failure && root.heldDots > 0)
+                failureShake.restart();
+            else if (phase === GreeterController.Idle || phase === GreeterController.ReturnToIdle || phase === GreeterController.Wake)
+                root.dropHeldDots();
+        }
+    }
+    // Damped horizontal shake (+-6 units, 2.5 oscillations) then fade out.
+    SequentialAnimation {
+        id: failureShake
+        NumberAnimation {
+            target: root
+            property: "shake"
+            from: 0
+            to: 1
+            duration: 300
+        }
+        ScriptAction {
+            script: root.shake = 0
+        }
+        NumberAnimation {
+            target: dotsRow
+            property: "opacity"
+            to: 0
+            duration: 180
+            easing.type: Easing.OutCubic
+        }
+        ScriptAction {
+            script: {
+                root.heldDots = 0;
+                dotsRow.opacity = 1;
+            }
+        }
     }
     function wakeWithInitialText(text) {
         if (!controller.isIdle)
@@ -39,6 +94,7 @@ Item {
         if (!controller.acceptsKeyboardInput || !responseRequired)
             return;
         let submittedResponse = passwordInput.text;
+        heldDots = echoResponse ? 0 : passwordInput.length;
         if (previewSuccess && previewShortcutsEnabled)
             controller.requestPreviewSuccess(loginUser, submittedResponse);
         else
@@ -85,6 +141,9 @@ Item {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 10 * root.scaleFactor
+                transform: Translate {
+                    x: 6 * root.scaleFactor * (1 - root.shake) * Math.sin(root.shake * Math.PI * 5)
+                }
                 Repeater {
                     id: passwordDots
                     objectName: "passwordDots"
@@ -103,7 +162,7 @@ Item {
                         height: width
                         radius: width / 2
                         color: "#F2F2F3"
-                        opacity: appear * (index === root.visiblePasswordDots - 1 ? .75 + .25 * root.controller.typingPulse : .75)
+                        opacity: appear * (root.showingHeldDots ? .45 : index === root.visiblePasswordDots - 1 ? .75 + .25 * root.controller.typingPulse : .75)
                         scale: (.35 + .65 * appear) * (index === root.visiblePasswordDots - 1
                                ? 1 + root.controller.typingPulse * .16 : 1)
                     }
@@ -112,7 +171,7 @@ Item {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.promptText
-                visible: passwordInput.length === 0
+                visible: passwordInput.length === 0 && !root.showingHeldDots
                 color: "#92929E"
                 font.family: "Adwaita Sans"
                 font.pixelSize: 15 * root.scaleFactor
@@ -135,7 +194,11 @@ Item {
                 // The native caret follows hidden glyphs, not the dots; the
                 // field draws its own caret below.
                 cursorDelegate: Item {}
-                onTextChanged: caretBlink.restart()
+                onTextChanged: {
+                    caretBlink.restart();
+                    if (length > 0 && root.heldDots > 0)
+                        root.dropHeldDots();
+                }
                 inputMethodHints: root.echoResponse
                                   ? Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
                                   : Qt.ImhHiddenText | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
@@ -163,7 +226,7 @@ Item {
             // After the last dot, at the native cursor for visible responses,
             // or just before the placeholder when the field is empty.
             x: root.echoResponse ? passwordInput.cursorRectangle.x
-               : root.visiblePasswordDots > 0 ? dotsRow.width + 8 * root.scaleFactor
+               : root.visiblePasswordDots > 0 && !root.showingHeldDots ? dotsRow.width + 8 * root.scaleFactor
                : -5 * root.scaleFactor
             anchors.verticalCenter: parent.verticalCenter
             width: Math.max(1, Math.round(1.5 * root.scaleFactor))
@@ -196,9 +259,11 @@ Item {
         Rectangle {
             anchors.left: parent.left
             anchors.bottom: parent.bottom
-            width: passwordInput.activeFocus ? 42 * root.scaleFactor : 18 * root.scaleFactor
+            // After a rejection the focus segment rests until the next key.
+            readonly property bool lit: passwordInput.activeFocus && !root.controller.failureNoticeVisible
+            width: lit ? 42 * root.scaleFactor : 18 * root.scaleFactor
             height: 1
-            color: passwordInput.activeFocus ? "#A78BFA" : "#34343D"
+            color: lit ? "#A78BFA" : "#34343D"
             opacity: 1 - root.controller.authenticationTension * .18
             Behavior on width {
                 NumberAnimation {
@@ -231,8 +296,8 @@ Item {
         width: parent.width
         wrapMode: Text.WordWrap
         visible: !root.controller.statusMessageVisible
-        opacity: root.hintReveal * (root.controller.phase === GreeterController.Failure ? Math.max(0, 1 - root.controller.failureProgress / root.failureCopyHandoff) : root.preparingAuthentication ? Math.abs(1 - 2 * root.controller.authenticationTension) : 1 - root.controller.authenticationTension)
-        text: root.controller.phase === GreeterController.Failure && !root.controller.failureResolving ? "Preparing your space" : root.preparingAuthentication && root.controller.authenticationTension >= .5 ? "Preparing your space" : "Enter to sign in  ·  Esc to return"
+        opacity: root.hintReveal * (1 - root.failureCopy) * (root.preparingAuthentication ? Math.abs(1 - 2 * root.controller.authenticationTension) : 1 - root.controller.authenticationTension)
+        text: root.preparingAuthentication && root.controller.authenticationTension >= .5 ? "Preparing your space" : "Enter to sign in  ·  Esc to return"
         color: "#92929E"
         font.family: "Adwaita Sans"
         font.pixelSize: 13 * root.scaleFactor
@@ -253,7 +318,7 @@ Item {
         y: 196 * root.scaleFactor + (1 - root.hintReveal) * 8
         width: parent.width
         wrapMode: Text.WordWrap
-        opacity: root.hintReveal * (root.controller.phase === GreeterController.Failure ? Math.max(0, Math.min(1, (root.controller.failureProgress - root.failureCopyHandoff) / (1 - root.failureCopyHandoff))) : 0)
+        opacity: root.hintReveal * root.failureCopy * (root.controller.statusMessageVisible && root.controller.phase !== GreeterController.Failure ? 0 : 1)
         text: "Couldn't sign in. Try again."
         color: "#A78BFA"
         font.family: "Adwaita Sans"
