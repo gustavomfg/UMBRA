@@ -304,7 +304,7 @@ Item {
         property: "successProgress"
         from: 0
         to: 1
-        duration: 1480
+        duration: 950
         easing.type: Easing.InOutCubic
 
         onFinished: {

@@ -178,7 +178,7 @@ A tensão do hero começa no wake. O controlador espera 40 ms e anima `authRevea
 - **Auth:** digitação decai em 280 ms OutCubic e desloca minimamente a geometria; cada ponto da senha entra em 150 ms.
 - **Authenticating:** tensão anima em 440 ms InOutCubic, reduz velocidade do tempo orbital em até 38%, pulsa suavemente o limbo e modula o alinhamento dos estratos.
 - **Failure:** deformação curta de plano; 140 ms de entrada e 260 ms de saída. Feedback lilás localizado.
-- **Success:** 1480 ms InOutCubic; os anéis contraem, a esfera cresce e a luz se apaga. UI some no primeiro terço de progressão. O shader para ao atingir preto.
+- **Success:** 950 ms InOutCubic; os anéis contraem, a esfera cresce e a luz se apaga. UI some no primeiro terço de progressão. O shader para ao atingir preto.
 - **Return to idle:** reveal e sucesso retornam em 460 ms InOutCubic; tensão em 360 ms OutSine.
 
 O tempo do shader avança por `FrameAnimation`, uma vez por frame renderizado e em sincronia com o vsync; o passo é limitado a 50 ms. A camada extra de captura só existe com `NOCTURNE_CAPTURE_DIR`.

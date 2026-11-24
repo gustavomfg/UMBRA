@@ -169,7 +169,7 @@ TestCase {
         compare(controller.phase, GreeterController.Success);
         verify(controller.authenticationTensionActive);
         const progressAtResult = controller.successProgress;
-        verify(progressAtResult > 0.03 && progressAtResult < 0.12);
+        verify(progressAtResult > 0.12 && progressAtResult < 0.42);
         wait(100);
         verify(controller.successProgress > progressAtResult);
         wait(1150);
