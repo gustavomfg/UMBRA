@@ -361,6 +361,25 @@ TestCase {
         compare(controller.statusMessage, "");
     }
 
+    function test_holdToPeekShowsTextOnlyWhileHeld() {
+        controller.wake();
+        wait(480);
+        authPanel.inputField.text = "secret";
+        const peek = findChild(authPanel, "peekButton");
+        verify(peek.visible);
+        verify(!authPanel.peeking);
+        compare(authPanel.inputField.echoMode, TextInput.Password);
+        mousePress(peek, peek.width / 2, peek.height / 2);
+        verify(authPanel.peeking);
+        compare(authPanel.inputField.echoMode, TextInput.Normal);
+        compare(authPanel.visiblePasswordDots, 0);
+        mouseRelease(peek, peek.width / 2, peek.height / 2);
+        verify(!authPanel.peeking);
+        compare(authPanel.inputField.echoMode, TextInput.Password);
+        verify(authPanel.inputField.activeFocus);
+        authPanel.clearInput();
+    }
+
     function test_failurePulseReleasesWithoutHold() {
         controller.wake();
         wait(480);

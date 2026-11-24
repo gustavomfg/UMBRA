@@ -34,7 +34,10 @@ Item {
     }
     readonly property bool preparingAuthentication: controller.phase === GreeterController.Authenticating || controller.phase === GreeterController.Success
     readonly property int passwordDotCapacity: Math.max(0, Math.floor((passphraseArea.width - submitButton.width - 18 * root.scaleFactor) / (16 * root.scaleFactor)))
-    readonly property int visiblePasswordDots: echoResponse ? 0 : Math.min(passwordInput.length > 0 ? passwordInput.length : heldDots, passwordDotCapacity)
+    // Hold-to-peek: the hidden response shows as text only while held.
+    readonly property bool peeking: peekArea.pressed && !echoResponse && passwordInput.length > 0
+    readonly property bool showingText: echoResponse || peeking
+    readonly property int visiblePasswordDots: showingText ? 0 : Math.min(passwordInput.length > 0 ? passwordInput.length : heldDots, passwordDotCapacity)
     readonly property bool showingHeldDots: passwordInput.length === 0 && heldDots > 0
     function focusInput() {
         passwordInput.forceActiveFocus();
@@ -136,8 +139,8 @@ Item {
         opacity: root.fieldReveal * (1 - root.controller.authenticationTension * .12)
         Item {
             anchors.left: parent.left
-            anchors.right: submitButton.left
-            anchors.rightMargin: 18 * root.scaleFactor
+            anchors.right: peekButton.visible ? peekButton.left : submitButton.left
+            anchors.rightMargin: (peekButton.visible ? 8 : 18) * root.scaleFactor
             height: parent.height
             clip: true
             Row {
@@ -186,9 +189,9 @@ Item {
                 anchors.fill: parent
                 enabled: root.controller.acceptsKeyboardInput
                 activeFocusOnPress: true
-                echoMode: root.echoResponse ? TextInput.Normal : TextInput.Password
+                echoMode: root.showingText ? TextInput.Normal : TextInput.Password
                 maximumLength: 256
-                color: root.echoResponse ? Theme.text : "transparent"
+                color: root.showingText ? Theme.text : "transparent"
                 selectionColor: root.echoResponse ? Theme.selection : "transparent"
                 selectedTextColor: root.echoResponse ? Theme.selectedText : "transparent"
                 // Same metrics as the placeholder, centred on the field's line.
@@ -229,7 +232,7 @@ Item {
             readonly property bool active: passwordInput.activeFocus && root.controller.acceptsKeyboardInput
             // After the last dot, at the native cursor for visible responses,
             // or just before the placeholder when the field is empty.
-            x: root.echoResponse ? passwordInput.cursorRectangle.x
+            x: root.showingText ? passwordInput.cursorRectangle.x
                : root.visiblePasswordDots > 0 && !root.showingHeldDots ? dotsRow.width + 8 * root.scaleFactor
                : -5 * root.scaleFactor
             anchors.verticalCenter: parent.verticalCenter
@@ -279,6 +282,39 @@ Item {
                 ColorAnimation {
                     duration: 160
                 }
+            }
+        }
+        // Not an IconButton: pressing it must not take focus from the field.
+        Item {
+            id: peekButton
+            objectName: "peekButton"
+            anchors.right: submitButton.left
+            anchors.verticalCenter: parent.verticalCenter
+            width: 36 * root.scaleFactor
+            height: width
+            visible: !root.echoResponse && passwordInput.length > 0 && root.controller.acceptsKeyboardInput
+            Accessible.role: Accessible.Button
+            Accessible.name: "Hold to show password"
+            Image {
+                anchors.centerIn: parent
+                width: 17 * root.scaleFactor
+                height: width
+                sourceSize: Qt.size(width * 2, height * 2)
+                source: "../assets/icons/eye.svg"
+                opacity: peekArea.pressed ? 1 : peekArea.containsMouse ? .85 : .55
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 140
+                    }
+                }
+            }
+            MouseArea {
+                id: peekArea
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onReleased: passwordInput.forceActiveFocus()
+                onCanceled: passwordInput.forceActiveFocus()
             }
         }
         IconButton {
