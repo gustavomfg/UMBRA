@@ -67,6 +67,7 @@ ShellRoot {
             controller: preview.controller
             authPanel: preview.authPanel
             chrome: preview.chrome
+            greeterWindow: preview
             outputDirectory: preview.captureDir
             selectedState: Quickshell.env("NOCTURNE_CAPTURE_STATE") || "idle"
             offset: Number(Quickshell.env("NOCTURNE_CAPTURE_OFFSET")) || 0

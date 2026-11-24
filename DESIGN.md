@@ -179,6 +179,7 @@ A tensão do hero começa no wake. O controlador espera 40 ms e anima `authRevea
 - **Authenticating:** tensão anima em 360 ms OutCubic; a órbita desacelera para 0,85× e um arco prateado discreto percorre o anel (~3 s por volta). Os pontos da senha ficam visíveis a 45% enquanto o PAM responde.
 - **Failure:** uma única onda lilás atravessa os anéis de dentro para fora em 700 ms InOutSine; a velocidade da órbita recua 1 → 0,6 → 1,4 → 1 na mesma progressão, sem alterar a textura. Os pontos tremem ±6 unidades (2,5 oscilações, 300 ms) e somem em 180 ms; a linha de foco volta a #34343D. "Couldn't sign in. Try again." fica até a próxima tecla. O teclado aceita digitação durante toda a fase.
 - **Success:** 950 ms InOutCubic; os anéis contraem, a esfera cresce e a luz se apaga. UI some no primeiro terço de progressão. O shader para ao atingir preto.
+- **Power:** Reiniciar e Desligar reutilizam o colapso do sucesso (950 ms InOutCubic) antes de pedir a ação; Suspender não colapsa. Se a máquina continuar ativa após 8 s, a cena volta em 460 ms.
 - **Return to idle:** reveal e sucesso retornam em 460 ms InOutCubic; tensão em 360 ms OutSine.
 
 O tempo do shader avança por `FrameAnimation`, em sincronia com o vsync; o passo é limitado a 50 ms. Em Idle o hero é redesenhado a ~30 fps; nos demais estados, na taxa do monitor. `NOCTURNE_REDUCED_MOTION=1` congela a órbita e mantém as transições de estado. A camada extra de captura só existe com `NOCTURNE_CAPTURE_DIR`.

@@ -6,6 +6,7 @@ Item {
     required property var controller
     required property var authPanel
     required property var chrome
+    property var greeterWindow: null
     required property string outputDirectory
     required property string selectedState
     property int step: 0
@@ -16,7 +17,7 @@ Item {
         if (name !== selectedState)
             return;
         sequence.stop();
-        const tag = name === "failure-at" || name === "wait-at" ? name + "-" + String(offset).padStart(4, "0") : name;
+        const tag = name === "failure-at" || name === "wait-at" || name === "power-at" ? name + "-" + String(offset).padStart(4, "0") : name;
         targetItem.grabToImage(function (result) {
             const path = outputDirectory + "/" + targetItem.width + "x" + targetItem.height + "-" + tag + ".png";
             if (!result.saveToFile(path))
@@ -54,6 +55,14 @@ Item {
                 interval = 250;
                 break;
             case 1:
+                if (root.selectedState === "power-at" && root.greeterWindow) {
+                    // Motion only: the preview shell runs no power command.
+                    root.greeterWindow.beginPowerTransition("poweroff", true);
+                    offsetTimer.interval = Math.max(1, root.offset);
+                    offsetTimer.restart();
+                    sequence.stop();
+                    break;
+                }
                 if (root.selectedState === "idle-long") {
                     root.capture("idle-long");
                     break;
