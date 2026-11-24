@@ -220,7 +220,7 @@ FloatingWindow {
                 opacity: Math.max(0, 1 - greeterController.authReveal * 3)
                 visible: opacity > .001
                 Text {
-                    text: "Press a key to enter"
+                    text: Strings.pressKey
                     color: Theme.placeholder
                     font.family: Theme.sans
                     font.pixelSize: 13 * window.uiScale

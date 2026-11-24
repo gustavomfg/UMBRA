@@ -2,10 +2,16 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import "components"
+import "components/theme"
 
 ShellRoot {
     // Entry point for the isolated in-session prototype.
     id: shell
+
+    Component.onCompleted: {
+        const chosen = Quickshell.env("NOCTURNE_LANGUAGE") || "";
+        Strings.language = chosen === "en" || chosen === "pt-BR" ? chosen : (Quickshell.env("LANG") || "").startsWith("pt") ? "pt-BR" : "en";
+    }
 
     LiveSystemStatus {
         id: liveStatus
@@ -30,7 +36,7 @@ ShellRoot {
         responseRequired: boundary.responseRequired
         echoResponse: boundary.echoResponse
         sessionContextText: "Current session · preview"
-        powerUnavailableText: "Unavailable in preview"
+        powerUnavailableText: Strings.pt ? "Indisponível no preview" : "Unavailable in preview"
         windowTitle: "UMBRA · Preview"
         statusModel: liveStatus
         previewShortcutsEnabled: true

@@ -11,5 +11,8 @@
 #XKB_DEFAULT_LAYOUT=br
 #XKB_DEFAULT_VARIANT=abnt2
 #
+# Interface language: en or pt-BR (default follows LANG).
+#NOCTURNE_LANGUAGE=pt-BR
+#
 # 1 keeps the planet still (state transitions still play).
 #NOCTURNE_REDUCED_MOTION=1

@@ -114,7 +114,8 @@ Item {
         opacity: root.identityReveal * (1 - root.controller.authenticationTension * .08)
         spacing: 10 * root.scaleFactor
         Text {
-            text: "Welcome back,"
+            // Re-evaluated on every phase change, so it follows the clock.
+            text: { root.controller.phase; return Strings.greeting(new Date().getHours()); }
             color: Theme.secondary
             font.family: Theme.sans
             font.pixelSize: 15 * root.scaleFactor
@@ -177,7 +178,7 @@ Item {
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: root.promptText
+                text: Strings.prompt(root.promptText)
                 visible: passwordInput.length === 0 && !root.showingHeldDots
                 color: Theme.placeholder
                 font.family: Theme.sans
@@ -294,7 +295,7 @@ Item {
             height: width
             visible: !root.echoResponse && passwordInput.length > 0 && root.controller.acceptsKeyboardInput
             Accessible.role: Accessible.Button
-            Accessible.name: "Hold to show password"
+            Accessible.name: Strings.peek
             Image {
                 anchors.centerIn: parent
                 width: 17 * root.scaleFactor
@@ -325,7 +326,7 @@ Item {
             width: 44 * root.scaleFactor
             height: width
             icon: "../assets/icons/arrow.svg"
-            label: "Sign in"
+            label: Strings.signIn
             scaleFactor: root.scaleFactor
             enabled: root.controller.acceptsKeyboardInput
             onClicked: root.submit()
@@ -337,7 +338,7 @@ Item {
         wrapMode: Text.WordWrap
         visible: !root.controller.statusMessageVisible
         opacity: root.hintReveal * (1 - root.failureCopy) * (root.preparingAuthentication ? Math.abs(1 - 2 * root.controller.authenticationTension) : 1 - root.controller.authenticationTension)
-        text: root.preparingAuthentication && root.controller.authenticationTension >= .5 ? "Preparing your space" : "Enter to sign in  ·  Esc to return"
+        text: root.preparingAuthentication && root.controller.authenticationTension >= .5 ? Strings.preparing : Strings.hint
         color: Theme.placeholder
         font.family: Theme.sans
         font.pixelSize: 13 * root.scaleFactor
@@ -359,7 +360,7 @@ Item {
         width: parent.width
         wrapMode: Text.WordWrap
         opacity: root.hintReveal * root.failureCopy * (root.controller.statusMessageVisible && root.controller.phase !== GreeterController.Failure ? 0 : 1)
-        text: "Couldn't sign in. Try again."
+        text: Strings.failed
         color: Theme.lilac
         font.family: Theme.sans
         font.pixelSize: 13 * root.scaleFactor
@@ -377,7 +378,7 @@ Item {
         Text {
             objectName: "capsLockIndicator"
             visible: root.capsLockOn
-            text: "Caps Lock"
+            text: Strings.capsLock
             color: Theme.lilac
             font.family: Theme.sans
             font.pixelSize: 13 * root.scaleFactor

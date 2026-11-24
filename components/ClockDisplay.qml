@@ -21,7 +21,7 @@ Item {
             font.letterSpacing: -3 * root.scaleFactor
         }
         Text {
-            text: Qt.formatDateTime(clock.date, "dddd, d MMMM")
+            text: Strings.date(clock.date)
             color: Theme.secondary
             font.family: Theme.sans
             font.pixelSize: 14 * root.scaleFactor

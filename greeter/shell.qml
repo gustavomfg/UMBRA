@@ -3,6 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "components"
+import "components/theme"
 
 // Pre-login entrypoint run by greetd (as the `greeter` service identity) from
 // a root-owned install tree. No preview shortcuts, capture, debug overlay,
@@ -12,8 +13,17 @@ ShellRoot {
 
     property var presentationProbe: null
 
+    // NOCTURNE_LANGUAGE (en | pt-BR), else the locale in LANG.
+    function interfaceLanguage() {
+        const chosen = Quickshell.env("NOCTURNE_LANGUAGE") || "";
+        if (chosen === "en" || chosen === "pt-BR")
+            return chosen;
+        return (Quickshell.env("LANG") || "").startsWith("pt") ? "pt-BR" : "en";
+    }
+
     Component.onCompleted: {
         Quickshell.watchFiles = false;
+        Strings.language = root.interfaceLanguage();
         try {
             presentationProbe = Qt.createQmlObject("import Nocturne.Presentation; PresentationProbe {}", root, "PresentationProbe");
         } catch (error) {
@@ -80,9 +90,9 @@ ShellRoot {
         capsLockOn: keyboard.capsLock
         keyboardLayout: keyboard.layout
         reducedMotion: Quickshell.env("NOCTURNE_REDUCED_MOTION") === "1"
-        sessionContextText: "Session"
-        powerUnavailableText: "Unavailable"
-        audioUnavailableText: "Audio unavailable before sign-in"
+        sessionContextText: Strings.session
+        powerUnavailableText: Strings.unavailable
+        audioUnavailableText: Strings.audioBeforeSignIn
         windowTitle: "UMBRA"
         sessionOptions: catalog.sessions
         selectedSessionIndex: catalog.selectedSessionIndex
@@ -92,7 +102,7 @@ ShellRoot {
         onSessionChosen: index => catalog.selectSession(index)
         onUserChosen: index => catalog.selectUser(index)
         onPowerActionRequested: action => root.runPowerAction(action)
-        noticeText: catalog.users.length === 0 ? "No login users were found." : catalog.sessions.length === 0 ? "No sessions are available. An administrator must run nocturne-greeter-sessions." : root.presentationProbe === null || !root.presentationProbe.available ? "Sign-in is unavailable: the presentation module did not load. Rebuild nocturne-greeter." : ""
+        noticeText: catalog.users.length === 0 ? Strings.noUsers : catalog.sessions.length === 0 ? Strings.noSessions : root.presentationProbe === null || !root.presentationProbe.available ? Strings.presentationMissing : ""
     }
 
     AuthenticatorBridge {

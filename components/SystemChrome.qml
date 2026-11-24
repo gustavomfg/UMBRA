@@ -105,7 +105,7 @@ Item {
             height: 40 * root.scaleFactor
             activeFocusOnTab: visible
             Accessible.role: Accessible.Button
-            Accessible.name: "User: " + userLabel.text
+            Accessible.name: Strings.user + ": " + userLabel.text
             function activate() {
                 root.userMenuOpen = !root.userMenuOpen;
                 root.sessionMenuOpen = false;
@@ -167,7 +167,7 @@ Item {
             height: 40 * root.scaleFactor
             activeFocusOnTab: true
             Accessible.role: Accessible.Button
-            Accessible.name: "Session: " + root.desktopSession
+            Accessible.name: Strings.session + ": " + root.desktopSession
             function activate() {
                 root.sessionMenuOpen = !root.sessionMenuOpen;
                 root.powerMenuOpen = false;
@@ -226,7 +226,7 @@ Item {
         IconButton {
             objectName: "networkIndicator"
             icon: "../assets/icons/network.svg"
-            label: !root.networkAvailable ? "Network status unavailable" : root.online ? "Connected" : "No connection"
+            label: !root.networkAvailable ? Strings.networkUnavailable : root.online ? Strings.connected : Strings.noConnection
             scaleFactor: root.scaleFactor
             interactive: false
         }
@@ -248,7 +248,7 @@ Item {
             id: powerButton
             objectName: "powerButton"
             icon: "../assets/icons/power.svg"
-            label: "Power"
+            label: Strings.power
             scaleFactor: root.scaleFactor
             selected: root.powerMenuOpen
             onClicked: {
@@ -263,7 +263,7 @@ Item {
         objectName: "powerMenu"
         enabled: root.powerMenuOpen
         Accessible.role: Accessible.PopupMenu
-        Accessible.name: "Power"
+        Accessible.name: Strings.power
         onEnabledChanged: {
             if (enabled && root.powerActionsEnabled)
                 Qt.callLater(() => { if (root.powerMenuOpen) root.focusOption(powerOptions, 0); });
@@ -295,17 +295,17 @@ Item {
                 id: powerOptions
                 model: [
                     {
-                        name: "Sleep",
+                        name: Strings.sleep,
                         icon: "moon",
                         action: "suspend"
                     },
                     {
-                        name: "Restart",
+                        name: Strings.restart,
                         icon: "restart",
                         action: "reboot"
                     },
                     {
-                        name: "Shut down",
+                        name: Strings.shutDown,
                         icon: "power",
                         action: "poweroff"
                     }
