@@ -39,6 +39,7 @@ common_components=(
     greeter-model.js
     theme/qmldir
     theme/Theme.qml
+    theme/Strings.qml
 )
 for component in "${common_components[@]}"; do
     if [[ -L "$project_root/components/$component" ]]; then

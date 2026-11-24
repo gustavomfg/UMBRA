@@ -23,13 +23,14 @@ ShellRoot {
 
     Component.onCompleted: {
         Quickshell.watchFiles = false;
-        Strings.language = root.interfaceLanguage();
         try {
             presentationProbe = Qt.createQmlObject("import Nocturne.Presentation; PresentationProbe {}", root, "PresentationProbe");
         } catch (error) {
             // Without the probe the launch gate stays blocked.
             console.warn("nocturne-launch: presentation probe unavailable");
         }
+        // After the probe: copy must never stand between login and the gate.
+        Strings.language = root.interfaceLanguage();
     }
 
     Connections {

@@ -60,7 +60,7 @@ package() {
         GreetdAuthenticator.qml GreeterCatalog.qml GreeterController.qml \
         GreeterWindow.qml GreeterSystemStatus.qml IconButton.qml SessionLaunchGate.qml \
         SessionLaunchPolicy.qml SystemChrome.qml KeyboardStatus.qml greeter-model.js \
-        theme/qmldir theme/Theme.qml; do
+        theme/qmldir theme/Theme.qml theme/Strings.qml; do
         install -Dm644 "$repo/components/$component" "$share/components/$component"
     done
     install -Dm644 "$repo/assets/nocturne-mark.svg" "$share/assets/nocturne-mark.svg"
