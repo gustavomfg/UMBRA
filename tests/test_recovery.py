@@ -76,7 +76,24 @@ class RecoveryTests(unittest.TestCase):
         stdout = self.check_launcher(0, 'systemd-cat', noise='presentation module and Qt version OK')
         self.assertNotIn('Qt version OK', stdout)
 
-    def check_launcher(self, status, expected, noise=''):
+    def test_cursor_environment_is_allowlisted(self):
+        stdout = self.check_launcher(0, 'systemd-cat', environment=(
+            '# comment\n'
+            'XCURSOR_THEME = Bibata-Modern-Ice\n'
+            'XCURSOR_SIZE=24\n'
+            'LD_PRELOAD=/tmp/evil.so\n'
+            'XCURSOR_PATH=/tmp\n'))
+        self.assertIn('XCURSOR_THEME=Bibata-Modern-Ice\n', stdout)
+        self.assertIn('XCURSOR_SIZE=24\n', stdout)
+        self.assertNotIn('LD_PRELOAD', stdout)
+        self.assertNotIn('XCURSOR_PATH', stdout)
+
+    def test_cursor_environment_rejects_unsafe_values(self):
+        stdout = self.check_launcher(0, 'systemd-cat', environment='XCURSOR_THEME=$(id)\nXCURSOR_SIZE=99999\n')
+        self.assertNotIn('XCURSOR_THEME', stdout)
+        self.assertNotIn('XCURSOR_SIZE', stdout)
+
+    def check_launcher(self, status, expected, noise='', environment=None):
         with tempfile.TemporaryDirectory() as directory:
             work = Path(directory)
             checker = work / 'check'
@@ -84,6 +101,10 @@ class RecoveryTests(unittest.TestCase):
             checker.chmod(0o755)
             source = (ROOT / 'system/nocturne-greeter-start').read_text()
             source = source.replace('/usr/lib/nocturne-greeter/nocturne-greeter-check', str(checker))
+            env_file = work / 'environment'
+            if environment is not None:
+                env_file.write_text(environment)
+            source = source.replace('/etc/nocturne-greeter/environment', str(env_file))
             for binary in ['systemd-cat', 'agreety']:
                 stub = work / binary
                 stub.write_text(f'#!/bin/sh\nprintf "%s\\n" "{binary}" "$@"\n')
