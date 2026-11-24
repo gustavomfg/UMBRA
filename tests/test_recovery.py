@@ -72,11 +72,15 @@ class RecoveryTests(unittest.TestCase):
     def test_preflight_success_uses_graphical_login(self):
         self.check_launcher(0, 'systemd-cat')
 
-    def check_launcher(self, status, expected):
+    def test_preflight_output_never_reaches_the_vt(self):
+        stdout = self.check_launcher(0, 'systemd-cat', noise='presentation module and Qt version OK')
+        self.assertNotIn('Qt version OK', stdout)
+
+    def check_launcher(self, status, expected, noise=''):
         with tempfile.TemporaryDirectory() as directory:
             work = Path(directory)
             checker = work / 'check'
-            checker.write_text(f'#!/bin/sh\nexit {status}\n')
+            checker.write_text(f'#!/bin/sh\necho "{noise}"\nexit {status}\n')
             checker.chmod(0o755)
             source = (ROOT / 'system/nocturne-greeter-start').read_text()
             source = source.replace('/usr/lib/nocturne-greeter/nocturne-greeter-check', str(checker))
@@ -95,6 +99,7 @@ class RecoveryTests(unittest.TestCase):
             else:
                 self.assertIn('/usr/bin/cage', result.stdout)
                 self.assertNotIn('agreety', result.stdout)
+            return result.stdout
 
 
 if __name__ == '__main__':
