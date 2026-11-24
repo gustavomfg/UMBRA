@@ -80,4 +80,5 @@ package() {
     install -Dm644 "$repo/system/tmpfiles.conf" "$pkgdir/usr/lib/tmpfiles.d/nocturne-greeter.conf"
     install -Dm644 "$repo/system/greetd.toml" "$pkgdir/etc/nocturne-greeter/greetd.toml"
     install -Dm644 "$repo/system/greetd-dropin.conf" "$pkgdir/usr/lib/systemd/system/greetd.service.d/nocturne-greeter.conf"
+    install -Dm644 "$repo/system/plymouth-quit-dropin.conf" "$pkgdir/usr/lib/systemd/system/plymouth-quit.service.d/nocturne-greeter.conf"
 }

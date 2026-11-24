@@ -21,6 +21,7 @@ if find "$share" -type f | grep -Eq 'Preview|Mock|Harness|E2EDriver'; then
 fi
 grep -q 'previewShortcutsEnabled: false' "$share/shell.qml"
 grep -q 'nocturne-greeter-start' "$work/etc/nocturne-greeter/greetd.toml"
+grep -q 'plymouth quit --retain-splash' "$work/usr/lib/systemd/system/plymouth-quit.service.d/nocturne-greeter.conf"
 "$project_root/system/nocturne-greeter-check" --module-dir "$module"
 NOCTURNE_TEST_INSTALL_ROOT="$work" "$project_root/scripts/test-launch-gate-e2e.sh"
 NOCTURNE_TEST_INSTALL_ROOT="$work" "$project_root/scripts/test-launch-gate-e2e.sh" --no-probe

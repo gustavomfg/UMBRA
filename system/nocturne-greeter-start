@@ -12,6 +12,9 @@ vt_blank() {
     fi
 }
 vt_restore() {
+    # Plymouth's --retain-splash leaves the VT in graphics mode; the text
+    # recovery login is invisible until it is set back to KD_TEXT.
+    /usr/bin/python3 -I -c 'import fcntl; fcntl.ioctl(0, 0x4B3A, 0)' 2>/dev/null || true
     if [[ -t 1 ]]; then
         printf '\033[H\033[2J\033[3J\033[?25h'
     fi
