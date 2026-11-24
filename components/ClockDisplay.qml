@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import "theme"
 
 Item {
     id: root
@@ -13,16 +14,16 @@ Item {
         spacing: 9 * root.scaleFactor
         Text {
             text: Qt.formatDateTime(clock.date, "HH:mm")
-            color: "#F2F2F3"
-            font.family: "Noto Sans"
+            color: Theme.text
+            font.family: Theme.display
             font.pixelSize: 88 * root.scaleFactor
             font.weight: Font.Light
             font.letterSpacing: -3 * root.scaleFactor
         }
         Text {
-            text: Qt.formatDateTime(clock.date, "dddd, d MMMM")
-            color: "#A6A6B0"
-            font.family: "Adwaita Sans"
+            text: Strings.date(clock.date)
+            color: Theme.secondary
+            font.family: Theme.sans
             font.pixelSize: 14 * root.scaleFactor
         }
     }

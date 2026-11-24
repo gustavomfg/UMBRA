@@ -115,8 +115,7 @@ TestCase {
         compare(authPanel.inputField.text, "");
         wait(90);
         compare(controller.phase, GreeterController.Failure);
-        wait(430);
-        compare(controller.phase, GreeterController.Auth);
+        tryCompare(controller, "phase", GreeterController.Auth, 1000);
         verify(backend.active);
         verify(boundary.responseRequired);
     }
@@ -248,8 +247,7 @@ TestCase {
         compare(controller.phase, GreeterController.Failure);
         compare(boundary.attemptActive, false);
         verify(controller.statusMessageIsError);
-        wait(430);
-        compare(controller.phase, GreeterController.Auth);
+        tryCompare(controller, "phase", GreeterController.Auth, 1000);
         verify(!boundary.responseRequired);
     }
 

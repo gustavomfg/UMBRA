@@ -1,4 +1,5 @@
 import QtQuick
+import "theme"
 
 Item {
     id: root
@@ -20,9 +21,9 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: width / 2
-        color: "#111116"
+        color: Theme.graphite
         opacity: root.activeFocus || pointer.containsMouse || root.selected ? 1 : 0
-        border.color: root.activeFocus ? "#A78BFA" : "#34343D"
+        border.color: root.activeFocus ? Theme.lilac : Theme.outline
         border.width: root.activeFocus ? 1 : 0
         Behavior on opacity {
             NumberAnimation {
@@ -69,7 +70,7 @@ Item {
         width: tooltip.implicitWidth + 20
         height: 30
         radius: 5
-        color: "#111116"
+        color: Theme.graphite
         readonly property bool shown: pointer.containsMouse && root.label.length > 0 && !root.selected
         opacity: shown ? 1 : 0
         visible: opacity > .001
@@ -83,8 +84,8 @@ Item {
             id: tooltip
             anchors.centerIn: parent
             text: root.label
-            color: "#A6A6B0"
-            font.family: "Adwaita Sans"
+            color: Theme.secondary
+            font.family: Theme.sans
             font.pixelSize: 12
         }
     }

@@ -1,8 +1,18 @@
 # Environment for the Nocturne greeter (Cage and Quickshell).
 #
 # Match the pointer to your desktop session so the cursor does not change
-# when the session starts. Only these keys are read; values are unquoted.
+# when the session starts. Only the keys below are read; values are unquoted.
 # The theme must be installed system-wide (/usr/share/icons/<theme>).
 #
 #XCURSOR_THEME=Adwaita
 #XCURSOR_SIZE=24
+#
+# Keyboard layout for typing the password (Cage), shown beside the hint.
+#XKB_DEFAULT_LAYOUT=br
+#XKB_DEFAULT_VARIANT=abnt2
+#
+# Interface language: en or pt-BR (default follows LANG).
+#NOCTURNE_LANGUAGE=pt-BR
+#
+# 1 keeps the planet still (state transitions still play).
+#NOCTURNE_REDUCED_MOTION=1

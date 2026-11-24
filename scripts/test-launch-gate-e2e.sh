@@ -40,6 +40,7 @@ trap cleanup EXIT
 
 mkdir -m 700 "$run_root/runtime" "$run_root/stage" "$run_root/stage/components"
 cp -- "$resource_root/components/"*.qml "$resource_root/components/"*.js "$run_root/stage/components/"
+cp -r -- "$resource_root/components/theme" "$run_root/stage/components/theme"
 sed "s|@RUN@|$run_root|g" "$project_root/tests/launch-e2e/SessionLaunchPolicy.qml" > "$run_root/stage/components/SessionLaunchPolicy.qml"
 mkdir -m 700 "$run_root/fixture"
 cat > "$run_root/fixture/passwd" <<'PASSWD'

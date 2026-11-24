@@ -3,6 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "components"
+import "components/theme"
 
 // Pre-login entrypoint run by greetd (as the `greeter` service identity) from
 // a root-owned install tree. No preview shortcuts, capture, debug overlay,
@@ -12,6 +13,14 @@ ShellRoot {
 
     property var presentationProbe: null
 
+    // NOCTURNE_LANGUAGE (en | pt-BR), else the locale in LANG.
+    function interfaceLanguage() {
+        const chosen = Quickshell.env("NOCTURNE_LANGUAGE") || "";
+        if (chosen === "en" || chosen === "pt-BR")
+            return chosen;
+        return (Quickshell.env("LANG") || "").startsWith("pt") ? "pt-BR" : "en";
+    }
+
     Component.onCompleted: {
         Quickshell.watchFiles = false;
         try {
@@ -20,6 +29,8 @@ ShellRoot {
             // Without the probe the launch gate stays blocked.
             console.warn("nocturne-launch: presentation probe unavailable");
         }
+        // After the probe: copy must never stand between login and the gate.
+        Strings.language = root.interfaceLanguage();
     }
 
     Connections {
@@ -50,6 +61,12 @@ ShellRoot {
         sessionCommandPrefix: policy.sessionCommandPrefix
     }
 
+    KeyboardStatus {
+        id: keyboard
+        active: greeter.controller.authUiVisible
+        layout: Quickshell.env("XKB_DEFAULT_LAYOUT") || ""
+    }
+
     GreeterSystemStatus {
         id: systemStatus
         desktopSession: catalog.selectedSessionName
@@ -71,9 +88,12 @@ ShellRoot {
         responseRequired: boundary.responseRequired
         echoResponse: boundary.echoResponse
         previewShortcutsEnabled: false
-        sessionContextText: "Session"
-        powerUnavailableText: "Unavailable"
-        audioUnavailableText: "Audio unavailable before sign-in"
+        capsLockOn: keyboard.capsLock
+        keyboardLayout: keyboard.layout
+        reducedMotion: Quickshell.env("NOCTURNE_REDUCED_MOTION") === "1"
+        sessionContextText: Strings.session
+        powerUnavailableText: Strings.unavailable
+        audioUnavailableText: Strings.audioBeforeSignIn
         windowTitle: "UMBRA"
         sessionOptions: catalog.sessions
         selectedSessionIndex: catalog.selectedSessionIndex
@@ -83,7 +103,7 @@ ShellRoot {
         onSessionChosen: index => catalog.selectSession(index)
         onUserChosen: index => catalog.selectUser(index)
         onPowerActionRequested: action => root.runPowerAction(action)
-        noticeText: catalog.users.length === 0 ? "No login users were found." : catalog.sessions.length === 0 ? "No sessions are available. An administrator must run nocturne-greeter-sessions." : root.presentationProbe === null || !root.presentationProbe.available ? "Sign-in is unavailable: the presentation module did not load. Rebuild nocturne-greeter." : ""
+        noticeText: catalog.users.length === 0 ? Strings.noUsers : catalog.sessions.length === 0 ? Strings.noSessions : root.presentationProbe === null || !root.presentationProbe.available ? Strings.presentationMissing : ""
     }
 
     AuthenticatorBridge {

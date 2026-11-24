@@ -21,6 +21,8 @@ Item {
     property real typingPulse: 0
     property real failureProgress: 0
     property bool failureResolving: false
+    // "Couldn't sign in" stays until the next key, submit or idle.
+    property bool failureNoticeVisible: false
     property real successProgress: 0
     // True only after the SUCCESS timeline finished for the current Success
     // phase. The window then holds an opaque black scene for the launch gate.
@@ -56,6 +58,7 @@ Item {
         failureProgress = 0;
         successProgress = 0;
         successComplete = false;
+        failureNoticeVisible = false;
         phase = GreeterController.Wake;
         focusInputRequested();
         wakeTimeline.restart();
@@ -64,6 +67,7 @@ Item {
     function noteKey() {
         if (!acceptsKeyboardInput)
             return;
+        failureNoticeVisible = false;
         typingAnimation.stop();
         typingPulse = 1;
         typingAnimation.restart();
@@ -79,6 +83,7 @@ Item {
         failureTimeline.stop();
         failureProgress = 0;
         failureResolving = false;
+        failureNoticeVisible = false;
         statusMessage = "Authentication pending";
         statusMessageVisible = false;
         statusMessageIsError = false;
@@ -131,6 +136,7 @@ Item {
         echoResponse = false;
         failureProgress = 0;
         failureResolving = false;
+        failureNoticeVisible = true;
         phase = GreeterController.Failure;
         failureTimeline.restart();
     }
@@ -185,6 +191,7 @@ Item {
         responseRequired = false;
         echoResponse = false;
         failureResolving = false;
+        failureNoticeVisible = false;
         successComplete = false;
         typingAnimation.stop();
         typingPulse = 0;
@@ -262,31 +269,33 @@ Item {
     SequentialAnimation {
         id: failureTimeline
 
-        NumberAnimation {
-            target: root
-            property: "failureProgress"
-            to: 1
-            duration: 140
-            easing.type: Easing.OutCubic
-        }
-
-        ScriptAction {
-            script: {
-                if (root.phase === GreeterController.Failure)
-                    root.failureResolving = true;
+        // One wave across the rings (shader) and the orbit recoil (window
+        // clock) both run on this 0 -> 1 progress.
+        ParallelAnimation {
+            NumberAnimation {
+                target: root
+                property: "failureProgress"
+                from: 0
+                to: 1
+                duration: 700
+                easing.type: Easing.InOutSine
+            }
+            SequentialAnimation {
+                PauseAnimation {
+                    duration: 350
+                }
+                ScriptAction {
+                    script: {
+                        if (root.phase === GreeterController.Failure)
+                            root.failureResolving = true;
+                    }
+                }
             }
         }
 
-        NumberAnimation {
-            target: root
-            property: "failureProgress"
-            to: 0
-            duration: 260
-            easing.type: Easing.InOutSine
-        }
-
         ScriptAction {
             script: {
+                root.failureProgress = 0;
                 if (root.phase === GreeterController.Failure) {
                     root.phase = GreeterController.Auth;
                     root.statusMessage = "";

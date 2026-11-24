@@ -43,6 +43,14 @@ if [[ -r "$environment_file" ]]; then
                 [[ "$value" =~ ^[A-Za-z0-9._+-]{1,64}$ ]] && greeter_env+=("XCURSOR_THEME=$value") ;;
             XCURSOR_SIZE)
                 [[ "$value" =~ ^[1-9][0-9]{0,2}$ ]] && greeter_env+=("XCURSOR_SIZE=$value") ;;
+            XKB_DEFAULT_LAYOUT)
+                [[ "$value" =~ ^[a-z]{2,8}(,[a-z]{2,8}){0,3}$ ]] && greeter_env+=("XKB_DEFAULT_LAYOUT=$value") ;;
+            XKB_DEFAULT_VARIANT)
+                [[ "$value" =~ ^[a-z0-9_-]{0,32}(,[a-z0-9_-]{0,32}){0,3}$ ]] && greeter_env+=("XKB_DEFAULT_VARIANT=$value") ;;
+            NOCTURNE_LANGUAGE)
+                [[ "$value" == en || "$value" == pt-BR ]] && greeter_env+=("NOCTURNE_LANGUAGE=$value") ;;
+            NOCTURNE_REDUCED_MOTION)
+                [[ "$value" =~ ^[01]$ ]] && greeter_env+=("NOCTURNE_REDUCED_MOTION=$value") ;;
         esac
     done < "$environment_file"
 fi

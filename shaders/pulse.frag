@@ -14,6 +14,7 @@ float noise(vec2 p) {
 mat2 turn(float a){return mat2(cos(a),-sin(a),sin(a),cos(a));}
 const vec3 silver=vec3(.72,.64,.86);
 const vec3 violet=vec3(.545,.361,.965);
+const vec3 lilac=vec3(.655,.545,.980);
 // The ring is a plane in 3D. Its z is compared with the sphere surface.
 vec3 ring(vec2 p,float sphereZ,float bodyR,float tilt,float offset,float weight) {
     float c=cos(tilt), s=sin(tilt);
@@ -24,7 +25,7 @@ vec3 ring(vec2 p,float sphereZ,float bodyR,float tilt,float offset,float weight)
     float rr=r/(1.-collapse*.50);
     float edge=smoothstep(.77,.81,rr)*(1.-smoothstep(1.40,1.50,rr));
     if(edge<.001 || z<sphereZ) return vec3(0.);
-    float phase=a-time*(.062+ .044/(rr*rr)) + failureProgress*.016*sin(rr*14.);
+    float phase=a-time*(.062+ .044/(rr*rr));
     float fine=pow(noise(vec2(rr*245., .7)),2.4);
     float strata=noise(vec2(rr*67.,1.5));
     float gaps=1.-.90*exp(-pow((rr-1.075)*105.,2.));
@@ -37,15 +38,22 @@ vec3 ring(vec2 p,float sphereZ,float bodyR,float tilt,float offset,float weight)
     float shadow=1.-.91*smoothstep(-.03,.025,hit)*(1.-smoothstep(-.05,.08,along));
     float front=mix(.38,1.,smoothstep(-.7,.8,z));
     float sector=.78+.22*cos(phase-1.2);
-    float align=mix(1.,.86+.14*cos(rr*45.),authenticationTension);
-    vec3 ink=mix(violet,silver,.35+.32*strata);
-    return ink*body*edge*front*shadow*sector*align*weight;
+    // PAM wait: one soft highlight travels around the ring.
+    float arcD=abs(mod(a-time*2.1+3.14159,6.28318)-3.14159);
+    float arc=authenticationTension*exp(-arcD*arcD*9.);
+    vec3 ink=mix(violet,silver,.35+.32*strata+.35*arc);
+    vec3 col=ink*body*(1.+.9*arc)*edge*front*shadow*sector*weight;
+    // Rejection: a single lilac wave crosses the rings from the inner edge out.
+    float wave=mix(.74,1.56,failureProgress);
+    float band=exp(-pow((rr-wave)/.05,2.))*sin(3.14159*failureProgress);
+    col+=lilac*band*(.22+.9*body)*edge*front*shadow*weight*1.2;
+    return col;
 }
 void main(){
     vec2 p=(qt_TexCoord0-.5)*2.; p.x*=resolution.x/max(resolution.y,1.);
     float collapse=smoothstep(.2,1.,successProgress);
     p/=1.+authProgress*.035+wakePulse*.009+collapse*.28;
-    p=turn(-.30+.020*sin(time*.11)+failureProgress*.018)*p;
+    p=turn(-.30+.020*sin(time*.11))*p;
     p.y+=typingPulse*.0018*sin(p.x*5.);
     float R=.545+collapse*.26;
     float d=length(p), aa=2./max(resolution.y,1.);
@@ -62,18 +70,17 @@ void main(){
         vec3 L=normalize(vec3(-.65,-.75,.38));
         float diffuse=max(dot(n,L),0.);
         float terrain=noise(p*17.+vec2(time*.006,0.))*.65+noise(p*43.)*.35;
-        float limb=pow(1.-max(n.z,0.),5.5);
+        float limb=pow(1.-max(n.z,0.),4.6);
         float lit=pow(max(dot(n,L),0.),1.6);
         vec3 surface=vec3(.015,.014,.020)*( .18+diffuse*(.75+.3*terrain));
-        surface+=mix(violet,silver,.45)*limb*lit*.52;
+        // Rim light on the lit (left) limb keeps the silhouette apart from the ring shadow.
+        surface+=mix(violet,silver,.45)*limb*lit*.74;
         surface+=silver*pow(diffuse,5.)*.035*(.4+terrain*.6);
         color=mix(color,surface,mask);
     }
     color+=ring(p,sphereZ,R,1.12+.020*sin(time*.07),0.,.76);
     color+=ring(turn(.037)*p,sphereZ,R,1.19,.012,.14);
     float atmosphere=exp(-abs(d-R)*260.)*smoothstep(-.1,.7,-p.x-p.y)*.12;
-    // A slow limb pulse keeps the scene visibly alive while PAM works.
-    atmosphere*=1.+authenticationTension*.55*(.5+.5*sin(time*2.2));
     color+=silver*atmosphere;
     color*=.97+.03*sin(time*.30);
     color*=1.-smoothstep(.58,1.,successProgress);

@@ -134,9 +134,9 @@ A composição implementada tem coluna editorial à esquerda, fenômeno à direi
 - `uiScale = clamp(height / 900, 1, 1.35)`.
 - Margem lateral: `clamp(width × 0.075, 42, 220)`.
 - Coluna: `min(width × 0.27, 340 × uiScale)`; origem vertical em 35% da altura.
-- Hero: largura `min(width × 0.79, height × 1.85)`, altura 84%; centro em 66% da largura e 51% da altura.
+- Hero: largura `min(width × 0.74, height × 1.85)`, altura 84%; centro em 64% da largura e 51% da altura. Os anéis ficam inteiros dentro do quadro em todas as proporções.
 - Acima de aspect ratio 2.1, o centro horizontal do hero passa a 65%.
-- Abaixo de aspect ratio 1.45, hero em cima, coluna a 63% da altura, largura limitada por margens e `380 × uiScale`; hero com largura de 115% e altura de 66%, centro em 58%/35%.
+- Abaixo de aspect ratio 1.45, hero em cima, coluna a 58,5% da altura, largura limitada por margens e `380 × uiScale`; hero com largura de 115% e altura de 66%, centro em 58%/33%.
 - Rodapé: controles de 40 unidades e afastamento inferior de 28 unidades, ambos escalados.
 
 Estas fórmulas descrevem esta tela; não obrigam outras superfícies Nocturne a copiar a mesma composição. As capturas em quatro resoluções são evidência de renderização virtual do Qt, não testes físicos de quatro monitores.
@@ -176,12 +176,13 @@ A tensão do hero começa no wake. O controlador espera 40 ms e anima `authRevea
 - **Idle:** órbita perceptível (anéis ~0,06 rad/s), oscilação leve do plano, breathing de ±3% e estrelas cintilando.
 - **Wake:** tensão sobe por 160 ms e se dissipa em 640 ms; hero lidera o texto; fase Auth em 340 ms.
 - **Auth:** digitação decai em 280 ms OutCubic e desloca minimamente a geometria; cada ponto da senha entra em 150 ms.
-- **Authenticating:** tensão anima em 440 ms InOutCubic, reduz velocidade do tempo orbital em até 38%, pulsa suavemente o limbo e modula o alinhamento dos estratos.
-- **Failure:** deformação curta de plano; 140 ms de entrada e 260 ms de saída. Feedback lilás localizado.
+- **Authenticating:** tensão anima em 360 ms OutCubic; a órbita desacelera para 0,85× e um arco prateado discreto percorre o anel (~3 s por volta). Os pontos da senha ficam visíveis a 45% enquanto o PAM responde.
+- **Failure:** uma única onda lilás atravessa os anéis de dentro para fora em 700 ms InOutSine; a velocidade da órbita recua 1 → 0,6 → 1,4 → 1 na mesma progressão, sem alterar a textura. Os pontos tremem ±6 unidades (2,5 oscilações, 300 ms) e somem em 180 ms; a linha de foco volta a #34343D. "Couldn't sign in. Try again." fica até a próxima tecla. O teclado aceita digitação durante toda a fase.
 - **Success:** 950 ms InOutCubic; os anéis contraem, a esfera cresce e a luz se apaga. UI some no primeiro terço de progressão. O shader para ao atingir preto.
+- **Power:** Reiniciar e Desligar reutilizam o colapso do sucesso (950 ms InOutCubic) antes de pedir a ação; Suspender não colapsa. Se a máquina continuar ativa após 8 s, a cena volta em 460 ms.
 - **Return to idle:** reveal e sucesso retornam em 460 ms InOutCubic; tensão em 360 ms OutSine.
 
-O tempo do shader avança por `FrameAnimation`, uma vez por frame renderizado e em sincronia com o vsync; o passo é limitado a 50 ms. A camada extra de captura só existe com `NOCTURNE_CAPTURE_DIR`.
+O tempo do shader avança por `FrameAnimation`, em sincronia com o vsync; o passo é limitado a 50 ms. Em Idle o hero é redesenhado a ~30 fps; nos demais estados, na taxa do monitor. `NOCTURNE_REDUCED_MOTION=1` congela a órbita e mantém as transições de estado. A camada extra de captura só existe com `NOCTURNE_CAPTURE_DIR`.
 
 ## Do's and Don'ts
 

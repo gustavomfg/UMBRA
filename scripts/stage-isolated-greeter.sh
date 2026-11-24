@@ -19,7 +19,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "$build_tree/components" "$build_tree/assets" "$build_tree/shaders"
+mkdir -p "$build_tree/components/theme" "$build_tree/assets" "$build_tree/shaders"
 
 common_components=(
     AuthPanel.qml
@@ -35,7 +35,11 @@ common_components=(
     SessionLaunchGate.qml
     SessionLaunchPolicy.qml
     SystemChrome.qml
+    KeyboardStatus.qml
     greeter-model.js
+    theme/qmldir
+    theme/Theme.qml
+    theme/Strings.qml
 )
 for component in "${common_components[@]}"; do
     if [[ -L "$project_root/components/$component" ]]; then
