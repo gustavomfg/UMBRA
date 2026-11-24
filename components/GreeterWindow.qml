@@ -152,12 +152,31 @@ FloatingWindow {
             running: canvas.shaderAnimating && !greeterController.isIdle
             onTriggered: canvas.advanceShader(frameTime)
         }
+        // QML exposes no display refresh rate: measure it from vsync-paced
+        // frames once at start-up (frames 10..70), then stop.
+        FrameAnimation {
+            id: refreshProbe
+            property real refresh: 60
+            property real total: 0
+            property int samples: 0
+            running: window.visible && samples < 60
+            onTriggered: {
+                if (currentFrame < 10 || frameTime <= 0 || frameTime > .05)
+                    return;
+                total += frameTime;
+                samples += 1;
+                if (samples === 60) {
+                    refresh = Math.max(24, Math.min(360, 60 / total));
+                    console.info("nocturne-display: measured refresh " + refresh.toFixed(1) + " Hz; idle hero every " + idleShaderClock.framesPerTick + " frames");
+                }
+            }
+        }
         Timer {
             id: idleShaderClock
             // A whole number of display frames per tick (~30 fps), with a
             // fixed orbit step per tick: every idle frame moves the rings by
             // the same amount, so timer jitter cannot show up as uneven steps.
-            readonly property real refresh: canvas.Screen.refreshRate > 1 ? canvas.Screen.refreshRate : 60
+            readonly property real refresh: refreshProbe.refresh
             readonly property int framesPerTick: Math.max(1, Math.round(refresh / 30))
             readonly property real tickSeconds: framesPerTick / refresh
             property real wallStart: 0
