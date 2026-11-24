@@ -181,7 +181,7 @@ A tensão do hero começa no wake. O controlador espera 40 ms e anima `authRevea
 - **Success:** 950 ms InOutCubic; os anéis contraem, a esfera cresce e a luz se apaga. UI some no primeiro terço de progressão. O shader para ao atingir preto.
 - **Return to idle:** reveal e sucesso retornam em 460 ms InOutCubic; tensão em 360 ms OutSine.
 
-O tempo do shader avança por `FrameAnimation`, uma vez por frame renderizado e em sincronia com o vsync; o passo é limitado a 50 ms. A camada extra de captura só existe com `NOCTURNE_CAPTURE_DIR`.
+O tempo do shader avança por `FrameAnimation`, em sincronia com o vsync; o passo é limitado a 50 ms. Em Idle o hero é redesenhado a ~30 fps; nos demais estados, na taxa do monitor. `NOCTURNE_REDUCED_MOTION=1` congela a órbita e mantém as transições de estado. A camada extra de captura só existe com `NOCTURNE_CAPTURE_DIR`.
 
 ## Do's and Don'ts
 

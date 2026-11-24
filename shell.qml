@@ -28,6 +28,7 @@ ShellRoot {
         windowTitle: "UMBRA · Preview"
         statusModel: liveStatus
         previewShortcutsEnabled: true
+        reducedMotion: Quickshell.env("NOCTURNE_REDUCED_MOTION") === "1"
     }
 
     PreviewAuthenticator {

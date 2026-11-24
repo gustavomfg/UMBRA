@@ -71,6 +71,7 @@ ShellRoot {
         responseRequired: boundary.responseRequired
         echoResponse: boundary.echoResponse
         previewShortcutsEnabled: false
+        reducedMotion: Quickshell.env("NOCTURNE_REDUCED_MOTION") === "1"
         sessionContextText: "Session"
         powerUnavailableText: "Unavailable"
         audioUnavailableText: "Audio unavailable before sign-in"

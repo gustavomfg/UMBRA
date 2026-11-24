@@ -54,6 +54,8 @@ FloatingWindow {
     color: "#000000"
     title: window.windowTitle
     property real shaderTime: 0
+    // Freezes the ambient orbit; state transitions still play.
+    property bool reducedMotion: false
     readonly property real uiScale: Math.max(1, Math.min(1.35, canvas.height / 900))
     readonly property real edgeMargin: Math.max(42, Math.min(canvas.width * .075, 220))
     function successPresence(start, end, progress) {
@@ -121,15 +123,30 @@ FloatingWindow {
             successProgress: greeterController.successProgress
             authenticationTension: greeterController.authenticationTension
         }
+        // Interaction runs the hero at display rate, locked to vsync. Idle
+        // drops to ~30 fps: a running FrameAnimation makes the render loop
+        // draw every vsync, so idle uses a plain timer instead.
+        readonly property bool shaderAnimating: window.visible && !window.reducedMotion && greeterController.successProgress < .999
+        function advanceShader(seconds) {
+            // While PAM works the orbit slows but keeps visibly moving.
+            window.shaderTime += Math.min(seconds, .05) * (1 - greeterController.authenticationTension * .38);
+        }
         FrameAnimation {
             id: shaderClock
-            // Advances once per rendered frame, in step with the render loop's
-            // vsync, so orbital motion never beats against the display refresh.
-            running: window.visible && greeterController.successProgress < .999
+            running: canvas.shaderAnimating && !greeterController.isIdle
+            onTriggered: canvas.advanceShader(frameTime)
+        }
+        Timer {
+            id: idleShaderClock
+            property real last: 0
+            interval: 33
+            repeat: true
+            running: canvas.shaderAnimating && greeterController.isIdle
+            onRunningChanged: last = Date.now()
             onTriggered: {
-                const elapsed = Math.min(frameTime, .05);
-                // While PAM works the orbit slows but keeps visibly moving.
-                window.shaderTime += elapsed * (1 - greeterController.authenticationTension * .38);
+                const now = Date.now();
+                canvas.advanceShader((now - last) / 1000);
+                last = now;
             }
         }
         Item {

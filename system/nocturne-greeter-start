@@ -43,6 +43,8 @@ if [[ -r "$environment_file" ]]; then
                 [[ "$value" =~ ^[A-Za-z0-9._+-]{1,64}$ ]] && greeter_env+=("XCURSOR_THEME=$value") ;;
             XCURSOR_SIZE)
                 [[ "$value" =~ ^[1-9][0-9]{0,2}$ ]] && greeter_env+=("XCURSOR_SIZE=$value") ;;
+            NOCTURNE_REDUCED_MOTION)
+                [[ "$value" =~ ^[01]$ ]] && greeter_env+=("NOCTURNE_REDUCED_MOTION=$value") ;;
         esac
     done < "$environment_file"
 fi
