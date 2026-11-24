@@ -108,9 +108,10 @@ FloatingWindow {
         }
         CosmicScene {
             id: cosmicScene
-            width: canvas.narrow ? canvas.width * 1.15 : Math.min(canvas.width * .79, canvas.height * 1.85)
+            // The rings stay whole inside the frame at every supported ratio.
+            width: canvas.narrow ? canvas.width * 1.15 : Math.min(canvas.width * .74, canvas.height * 1.85)
             height: canvas.height * (canvas.narrow ? .66 : .84)
-            x: canvas.width * (canvas.narrow ? .58 : canvas.width / canvas.height > 2.1 ? .65 : .66) - width / 2
+            x: canvas.width * (canvas.narrow ? .58 : canvas.width / canvas.height > 2.1 ? .65 : .64) - width / 2
             y: canvas.height * (canvas.narrow ? .35 : .51) - height / 2
             time: window.shaderTime
             authProgress: greeterController.authReveal

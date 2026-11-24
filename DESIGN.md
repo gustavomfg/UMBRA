@@ -134,7 +134,7 @@ A composição implementada tem coluna editorial à esquerda, fenômeno à direi
 - `uiScale = clamp(height / 900, 1, 1.35)`.
 - Margem lateral: `clamp(width × 0.075, 42, 220)`.
 - Coluna: `min(width × 0.27, 340 × uiScale)`; origem vertical em 35% da altura.
-- Hero: largura `min(width × 0.79, height × 1.85)`, altura 84%; centro em 66% da largura e 51% da altura.
+- Hero: largura `min(width × 0.74, height × 1.85)`, altura 84%; centro em 64% da largura e 51% da altura. Os anéis ficam inteiros dentro do quadro em todas as proporções.
 - Acima de aspect ratio 2.1, o centro horizontal do hero passa a 65%.
 - Abaixo de aspect ratio 1.45, hero em cima, coluna a 63% da altura, largura limitada por margens e `380 × uiScale`; hero com largura de 115% e altura de 66%, centro em 58%/35%.
 - Rodapé: controles de 40 unidades e afastamento inferior de 28 unidades, ambos escalados.

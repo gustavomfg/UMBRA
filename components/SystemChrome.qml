@@ -217,9 +217,11 @@ Item {
     }
     Row {
         anchors.right: parent.right
-        anchors.rightMargin: root.rightMargin
+        // Icons are 19-unit glyphs centred in 40-unit targets; offset by the
+        // inset so the last glyph lines up with the margin on the left.
+        anchors.rightMargin: root.rightMargin - 10.5 * root.scaleFactor
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 5 * root.scaleFactor
+        spacing: 8 * root.scaleFactor
         IconButton {
             objectName: "networkIndicator"
             icon: "../assets/icons/network.svg"
@@ -240,10 +242,6 @@ Item {
             label: root.batteryPercent + "% battery"
             scaleFactor: root.scaleFactor
             interactive: false
-        }
-        Item {
-            width: 14 * root.scaleFactor
-            height: 1
         }
         IconButton {
             id: powerButton
