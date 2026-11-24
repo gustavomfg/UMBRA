@@ -86,6 +86,9 @@ TestCase {
         if (!controller.isIdle)
             controller.returnToIdle();
         wait(500);
+        // A prompt parked by returning to idle survives into the next case;
+        // drop it so every case starts with a fresh attempt.
+        boundary.cancelAttempt();
         authPanel.clearInput();
         authResponseSpy.clear();
         previewSuccessSpy.clear();
@@ -183,6 +186,7 @@ TestCase {
 
         controller.returnToIdle();
         tryCompare(controller, "phase", GreeterController.Idle, 700);
+        boundary.cancelAttempt();
         backend.scenario = "error-message";
         controller.wake();
         compare(controller.statusMessage, "Security key not detected");
@@ -262,6 +266,40 @@ TestCase {
         verify(controller.successProgress > .99);
         compare(backend.requestSessionLaunch(), false);
         compare(boundary.requestSessionLaunch(), false);
+    }
+
+    function test_escapeParksPendingPromptWithoutCancelling() {
+        backend.scenario = "password-success";
+        controller.wake();
+        tryCompare(controller, "phase", GreeterController.Auth, 700);
+        verify(boundary.responseRequired);
+        const parkedGeneration = boundary.generation;
+
+        controller.returnToIdle();
+        tryCompare(controller, "phase", GreeterController.Idle, 700);
+        verify(boundary.attemptActive);
+        verify(backend.active);
+        compare(boundary.generation, parkedGeneration);
+
+        controller.wake();
+        compare(boundary.generation, parkedGeneration);
+        verify(controller.responseRequired);
+        tryCompare(controller, "phase", GreeterController.Auth, 700);
+        authPanel.inputField.text = "dummy";
+        authPanel.submit();
+        tryCompare(controller, "phase", GreeterController.Success, 500);
+    }
+
+    function test_changingUserCancelsParkedPrompt() {
+        controller.wake();
+        tryCompare(controller, "phase", GreeterController.Auth, 700);
+        controller.returnToIdle();
+        tryCompare(controller, "phase", GreeterController.Idle, 700);
+        verify(boundary.attemptActive);
+        boundary.selectedUser = "another-user";
+        verify(!boundary.attemptActive);
+        verify(!backend.active);
+        boundary.selectedUser = fixture.userId;
     }
 
     function test_cancelPreventsLateResult() {

@@ -23,6 +23,8 @@ Item {
     // multi-part notice (e.g. faillock's reason and remaining time) survives.
     property string messageBuffer: ""
     property bool messageBufferIsError: false
+    // User the active attempt was created for.
+    property string attemptUser: ""
 
     signal sessionLaunched(int attemptGeneration)
 
@@ -38,6 +40,7 @@ Item {
         generation += 1;
         const thisGeneration = generation;
         const userId = userHint || selectedUser;
+        attemptUser = userId;
         responseRequired = false;
         echoResponse = false;
         attemptActive = true;
@@ -55,6 +58,30 @@ Item {
             return false;
         }
         return true;
+    }
+
+    // An attempt that is only waiting for the user's answer to a PAM prompt is
+    // kept open across Esc / return to idle. Cancelling it would poison the
+    // Quickshell Greetd singleton and force a greeter restart (a black frame
+    // and the bare VT) for what is only a visual dismissal.
+    function canPark() {
+        return attemptActive && responseRequired && !launchRequested
+            && readyGeneration === 0 && attemptUser === selectedUser;
+    }
+
+    function resumeParked() {
+        if (!canPark())
+            return false;
+        if (messageBuffer.length > 0)
+            controller.presentMessage(messageBuffer, messageBufferIsError);
+        controller.presentPrompt(promptText, true, echoResponse);
+        return true;
+    }
+
+    onSelectedUserChanged: {
+        // A parked prompt belongs to the previous user; it cannot be reused.
+        if (attemptActive && !launchRequested && controller && controller.isIdle)
+            cancelAttempt();
     }
 
     function cancelAttempt() {
@@ -93,11 +120,14 @@ Item {
             if (!root.controller || !root.backend)
                 return;
 
-            if (root.controller.phase === GreeterController.Wake)
-                root.beginIfNeeded();
-            else if (root.controller.phase === GreeterController.ReturnToIdle
-                     || root.controller.phase === GreeterController.Idle)
-                root.cancelAttempt();
+            if (root.controller.phase === GreeterController.Wake) {
+                if (!root.resumeParked())
+                    root.beginIfNeeded();
+            } else if (root.controller.phase === GreeterController.ReturnToIdle
+                       || root.controller.phase === GreeterController.Idle) {
+                if (!root.canPark())
+                    root.cancelAttempt();
+            }
             else if (root.controller.phase === GreeterController.Auth && root.retryAfterFailure)
                 root.beginIfNeeded();
         }

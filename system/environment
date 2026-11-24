@@ -1,0 +1,8 @@
+# Environment for the Nocturne greeter (Cage and Quickshell).
+#
+# Match the pointer to your desktop session so the cursor does not change
+# when the session starts. Only these keys are read; values are unquoted.
+# The theme must be installed system-wide (/usr/share/icons/<theme>).
+#
+#XCURSOR_THEME=Adwaita
+#XCURSOR_SIZE=24

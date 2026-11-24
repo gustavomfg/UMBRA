@@ -26,7 +26,7 @@ depends=(
     'noto-fonts'
 )
 makedepends=('wayland-protocols' 'pkgconf' 'gcc' 'qt6-shadertools')
-backup=('etc/nocturne-greeter/greetd.toml')
+backup=('etc/nocturne-greeter/greetd.toml' 'etc/nocturne-greeter/environment')
 options=('!debug')
 install=nocturne-greeter.install
 source=()
@@ -79,5 +79,7 @@ package() {
     install -Dm644 "$repo/system/nocturne-greeter-check.hook" "$pkgdir/usr/share/libalpm/hooks/nocturne-greeter-check.hook"
     install -Dm644 "$repo/system/tmpfiles.conf" "$pkgdir/usr/lib/tmpfiles.d/nocturne-greeter.conf"
     install -Dm644 "$repo/system/greetd.toml" "$pkgdir/etc/nocturne-greeter/greetd.toml"
+    install -Dm644 "$repo/system/environment" "$pkgdir/etc/nocturne-greeter/environment"
     install -Dm644 "$repo/system/greetd-dropin.conf" "$pkgdir/usr/lib/systemd/system/greetd.service.d/nocturne-greeter.conf"
+    install -Dm644 "$repo/system/plymouth-quit-dropin.conf" "$pkgdir/usr/lib/systemd/system/plymouth-quit.service.d/nocturne-greeter.conf"
 }

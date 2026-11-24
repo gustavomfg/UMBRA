@@ -2,10 +2,56 @@
 # greetd owns stdin/stdout (the VT). Keep the recovery greeter outside
 # systemd-cat so its login prompt is visible when the graphical check fails.
 set -euo pipefail
-if /usr/lib/nocturne-greeter/nocturne-greeter-check; then
+
+# The VT is what shows whenever no compositor owns the display: before Cage
+# takes it, and between the greeter exiting and the session's compositor
+# taking it. Keep it an empty black screen without a text cursor.
+vt_blank() {
+    if [[ -t 1 ]]; then
+        printf '\033[H\033[2J\033[3J\033[?25l'
+    fi
+}
+vt_restore() {
+    # Plymouth's --retain-splash leaves the VT in graphics mode; the text
+    # recovery login is invisible until it is set back to KD_TEXT.
+    /usr/bin/python3 -I -c 'import fcntl; fcntl.ioctl(0, 0x4B3A, 0)' 2>/dev/null || true
+    if [[ -t 1 ]]; then
+        printf '\033[H\033[2J\033[3J\033[?25h'
+    fi
+}
+
+vt_blank
+
+# Preflight output goes to the journal, never to the VT.
+status=0
+check_output="$(/usr/lib/nocturne-greeter/nocturne-greeter-check 2>&1)" || status=$?
+if [[ -n "$check_output" ]]; then
+    printf '%s\n' "$check_output" | /usr/bin/systemd-cat --identifier=nocturne-greeter || true
+fi
+
+# Administrator-set cursor theme and size, so the pointer matches the
+# desktop session. Only allowlisted keys with plain values are accepted.
+greeter_env=()
+environment_file=/etc/nocturne-greeter/environment
+if [[ -r "$environment_file" ]]; then
+    while IFS='=' read -r key value || [[ -n "$key" ]]; do
+        key="${key//[[:space:]]/}"
+        value="${value#"${value%%[![:space:]]*}"}"
+        value="${value%"${value##*[![:space:]]}"}"
+        case "$key" in
+            XCURSOR_THEME)
+                [[ "$value" =~ ^[A-Za-z0-9._+-]{1,64}$ ]] && greeter_env+=("XCURSOR_THEME=$value") ;;
+            XCURSOR_SIZE)
+                [[ "$value" =~ ^[1-9][0-9]{0,2}$ ]] && greeter_env+=("XCURSOR_SIZE=$value") ;;
+        esac
+    done < "$environment_file"
+fi
+
+if ((status == 0)); then
     exec /usr/bin/systemd-cat --identifier=nocturne-greeter -- \
-        /usr/bin/env XDG_CACHE_HOME=/var/cache/nocturne-greeter \
+        /usr/bin/env "${greeter_env[@]}" XDG_CACHE_HOME=/var/cache/nocturne-greeter \
         /usr/bin/cage -s -- /usr/bin/quickshell --no-duplicate --path /usr/share/nocturne-greeter
 fi
+vt_restore
 printf '\nNocturne needs a rebuild after an update. Starting text login.\n'
 exec /usr/bin/agreety --cmd /usr/lib/nocturne-greeter/nocturne-recovery-session

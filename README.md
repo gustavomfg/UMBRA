@@ -42,6 +42,17 @@ Antes de trocar o gerenciador de login, salve seu trabalho e abra uma TTY com `C
 
 Ao atualizar da 0.9.0, incorpore eventuais alterações de `greetd.toml.pacnew` para que o comando configurado use `nocturne-greeter-start`. Veja [atualização e recuperação](docs/UPGRADE_RECOVERY.md).
 
+### Cursor igual ao da sessão
+
+O greeter usa o tema de cursor padrão do sistema. Para usar o mesmo cursor da sua sessão, defina o tema e o tamanho em `/etc/nocturne-greeter/environment` (o tema precisa estar instalado em `/usr/share/icons`):
+
+```sh
+XCURSOR_THEME=Bibata-Modern-Ice
+XCURSOR_SIZE=24
+```
+
+A alteração vale no próximo início do greeter.
+
 ### Manutenção e diagnóstico
 
 Após atualizar Qt ou Quickshell, o hook verifica a versão exata do Qt e o carregamento do módulo de apresentação. Se a checagem de inicialização falhar, o greeter oferece login em texto pelo agreety. Recompile e reinstale para recuperar o login gráfico:
