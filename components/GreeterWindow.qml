@@ -138,15 +138,29 @@ FloatingWindow {
         }
         Timer {
             id: idleShaderClock
-            property real last: 0
-            interval: 33
+            // A whole number of display frames per tick (~30 fps), with a
+            // fixed orbit step per tick: every idle frame moves the rings by
+            // the same amount, so timer jitter cannot show up as uneven steps.
+            readonly property real refresh: canvas.Screen.refreshRate > 1 ? canvas.Screen.refreshRate : 60
+            readonly property int framesPerTick: Math.max(1, Math.round(refresh / 30))
+            readonly property real tickSeconds: framesPerTick / refresh
+            property real wallStart: 0
+            property real advanced: 0
+            interval: Math.max(1, Math.round(tickSeconds * 1000))
             repeat: true
             running: canvas.shaderAnimating && greeterController.isIdle
-            onRunningChanged: last = Date.now()
+            onRunningChanged: {
+                wallStart = Date.now();
+                advanced = 0;
+            }
             onTriggered: {
-                const now = Date.now();
-                canvas.advanceShader((now - last) / 1000);
-                last = now;
+                canvas.advanceShader(tickSeconds);
+                advanced += tickSeconds;
+                // Resynchronise after a stall instead of drifting from real time.
+                if (Math.abs((Date.now() - wallStart) / 1000 - advanced) > tickSeconds * 3) {
+                    wallStart = Date.now();
+                    advanced = 0;
+                }
             }
         }
         Item {
