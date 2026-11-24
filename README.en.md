@@ -6,9 +6,11 @@ A greeter for Wayland sessions, built with **Quickshell, QML and GLSL** and inte
 
 **Version `1.0.0-2` — functional baseline complete for the owner's Arch Linux x86_64 / Wayland workstation with one monitor.** Real login, menu keyboard navigation, Qt compatibility preflight, text login recovery and packaging have been validated. Other GPUs and physical multi-monitor setups are outside this release's scope. See the [support scope and validation record](docs/COMPATIBILITY.md).
 
-![UMBRA sign-in screen](docs/screenshots/nocturne-umbra-auth.png)
+![UMBRA sign-in screen](docs/screenshots/umbra-auth-en.png)
 
-*Current interface, captured at 1920×1080 in preview mode with a demonstration identity.*
+![UMBRA idle screen](docs/screenshots/umbra-idle-en.png)
+
+*Current interface in English, captured at 1920×1080 in preview mode with a demonstration identity.*
 
 ## Features
 
@@ -23,6 +25,12 @@ A greeter for Wayland sessions, built with **Quickshell, QML and GLSL** and inte
 - An in-session preview and an isolated Wayland harness for development.
 - Arrow/Home/End menu navigation, visible focus and focus restoration.
 - Text login recovery when the presentation module needs rebuilding after a Qt update.
+- English or Brazilian Portuguese (pt-BR) interface, with a time-of-day greeting.
+- Caps Lock and keyboard layout indicator on the hint line; hold the eye icon to peek at the password.
+- A wrong password answers with a lilac wave across the rings and shaking dots, with no flash; while PAM works, the orbit keeps moving.
+- Restart and shut down reuse the ring collapse before the action.
+- Hero at ~30 fps while idle, vsync-locked during interaction, plus a reduced-motion option.
+- Cursor, keyboard layout and language configurable to match the session.
 
 ## Installation on Arch Linux
 
@@ -42,16 +50,20 @@ Before switching login managers, save your work and open a TTY with `Ctrl+Alt+F3
 
 If upgrading from 0.9.0, merge any `greetd.toml.pacnew` so the configured command uses `nocturne-greeter-start`. See [upgrade and recovery](docs/UPGRADE_RECOVERY.md).
 
-### Matching the session cursor
+### Greeter configuration
 
-The greeter uses the system's default cursor theme. To use the same cursor as your session, set the theme and size in `/etc/nocturne-greeter/environment` (the theme must be installed under `/usr/share/icons`):
+`/etc/nocturne-greeter/environment` matches the greeter to your session. Only these keys are read, with plain unquoted values:
 
 ```sh
-XCURSOR_THEME=Bibata-Modern-Ice
+XCURSOR_THEME=Bibata-Modern-Ice   # cursor theme, installed under /usr/share/icons
 XCURSOR_SIZE=24
+XKB_DEFAULT_LAYOUT=br             # layout used to type the password
+XKB_DEFAULT_VARIANT=abnt2
+NOCTURNE_LANGUAGE=pt-BR           # en or pt-BR; otherwise follows LANG
+NOCTURNE_REDUCED_MOTION=1         # keeps the planet still
 ```
 
-The change applies the next time the greeter starts.
+Changes apply the next time the greeter starts.
 
 ### Maintenance and diagnostics
 
@@ -83,10 +95,11 @@ sudo /usr/lib/nocturne-greeter/nocturne-greeter-sessions
 - Choose a user from the menu available while idle and a session from the bottom bar menu.
 - Type your password and press `Enter` or click the arrow to sign in.
 - `Esc` closes an open menu or returns to idle and clears the password.
+- Hold the eye icon beside the arrow to peek at the typed password. Caps Lock shows in lilac on the hint line.
 - The power menu offers suspend, restart and shut down.
 - Use `Tab` to reach a menu button, `Enter` or `Space` to open it, arrows or `Home`/`End` to navigate, and `Enter`/`Space` to select. `Escape` closes the menu and restores focus; `Tab` closes it and moves to the next control.
 
-The interface is in English; dates follow the Qt locale. Fonts are **Noto Sans Light**, **Adwaita Sans** and, in debug mode, **Adwaita Mono**.
+The interface is in English or Brazilian Portuguese, from `NOCTURNE_LANGUAGE` or `LANG`; the date follows the language. Fonts are **Noto Sans Light**, **Adwaita Sans** and, in debug mode, **Adwaita Mono**.
 
 ## Preview
 
@@ -104,7 +117,7 @@ NOCTURNE_WINDOWED=1 NOCTURNE_WIDTH=1280 NOCTURNE_HEIGHT=720 ./scripts/run-previe
 
 In preview mode, `Enter` simulates a failure and `Ctrl+Enter` simulates the success animation. Power controls are disabled, and network, audio and battery indicators are read-only. Use test text in the password field: this mode does not authenticate or launch sessions.
 
-`NOCTURNE_DEBUG=1` reveals development controls; `NOCTURNE_USER_NAME` changes the displayed name. Tiling compositors may override the requested window size.
+`NOCTURNE_DEBUG=1` reveals development controls; `NOCTURNE_USER_NAME` changes the displayed name; `NOCTURNE_LANGUAGE` and `NOCTURNE_REDUCED_MOTION` work as in the installed greeter. Tiling compositors may override the requested window size.
 
 ## Development and verification
 
@@ -144,13 +157,17 @@ The harness opens a nested KWin Wayland instance with its own runtime, socket an
 
 Generates interface state images in `docs/screenshots/final/` at 1280×720, 1920×1080, 2560×1440 and 3440×1440. Each state uses a separate preview process. Images are rendered on Qt canvases; this does not change the monitor resolution or replace testing on four physical monitors.
 
+For motion sequences, `NOCTURNE_CAPTURE_STATE=wait-at`, `failure-at` or `power-at` with `NOCTURNE_CAPTURE_OFFSET` (ms) capture the PAM wait, the failure and the power collapse at chosen instants; `NOCTURNE_PREVIEW_DELAY` emulates the PAM delay.
+
 ## Architecture
 
 | Path | Role |
 | --- | --- |
 | `greeter/shell.qml` | Production entry point for greetd |
 | `shell.qml` | In-session preview entry point |
-| `components/GreeterWindow.qml` | Responsive composition, focus and visual integration |
+| `components/GreeterWindow.qml` | Responsive composition, focus, shader clock and power transition |
+| `components/theme/` | Colour and type tokens (`Theme`) and English/pt-BR copy (`Strings`) |
+| `components/KeyboardStatus.qml` | Caps Lock from `/sys/class/leds` and the keyboard layout |
 | `components/GreeterController.qml` | Idle, authentication, success and failure states |
 | `components/GreetdAuthenticator.qml`, `AuthenticatorBridge.qml` | Authentication, PAM prompts and cancellation |
 | `components/GreeterCatalog.qml`, `greeter-model.js` | Users, sessions and last selection |

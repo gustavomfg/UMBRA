@@ -6,9 +6,11 @@ Greeter para sessões Wayland, construído com **Quickshell, QML e GLSL** e inte
 
 **Versão `1.0.0-2` — base funcional concluída para a estação Arch Linux x86_64 / Wayland do autor, com um monitor.** Login real, navegação dos menus por teclado, checagem de compatibilidade com Qt, recuperação por login em texto e empacotamento foram validados. Outras GPUs e configurações físicas com vários monitores ficam fora do escopo desta versão. Veja o [escopo de suporte e os resultados de validação](docs/COMPATIBILITY.md).
 
-![Tela de autenticação do UMBRA](docs/screenshots/nocturne-umbra-auth.png)
+![Tela de autenticação do UMBRA](docs/screenshots/umbra-auth-pt-BR.png)
 
-*Interface atual, capturada em 1920×1080 pelo modo preview com uma identidade de demonstração.*
+![Tela de repouso do UMBRA](docs/screenshots/umbra-idle-pt-BR.png)
+
+*Interface atual em português, capturada em 1920×1080 pelo modo preview com uma identidade de demonstração.*
 
 ## Recursos
 
@@ -23,6 +25,12 @@ Greeter para sessões Wayland, construído com **Quickshell, QML e GLSL** e inte
 - Preview na sessão atual e harness Wayland isolado para desenvolvimento.
 - Menus com setas, Home/End, foco visível e retorno do foco ao fechar.
 - Recuperação por login em texto quando uma atualização do Qt exige recompilar o módulo de apresentação.
+- Interface em português (pt-BR) ou inglês, com saudação conforme o horário.
+- Indicador de Caps Lock e do layout de teclado na linha de dica; ícone de olho para ver a senha enquanto é segurado.
+- Senha errada respondida por uma onda lilás nos anéis e pelos pontos tremendo, sem flash; durante a espera do PAM, a órbita continua em movimento.
+- Reiniciar e desligar reaproveitam o colapso dos anéis antes da ação.
+- Hero a ~30 fps em repouso, sincronizado com a taxa do monitor nas interações, e opção de movimento reduzido.
+- Cursor, layout de teclado e idioma configuráveis para combinar com a sessão.
 
 ## Instalação no Arch Linux
 
@@ -42,16 +50,20 @@ Antes de trocar o gerenciador de login, salve seu trabalho e abra uma TTY com `C
 
 Ao atualizar da 0.9.0, incorpore eventuais alterações de `greetd.toml.pacnew` para que o comando configurado use `nocturne-greeter-start`. Veja [atualização e recuperação](docs/UPGRADE_RECOVERY.md).
 
-### Cursor igual ao da sessão
+### Configuração do greeter
 
-O greeter usa o tema de cursor padrão do sistema. Para usar o mesmo cursor da sua sessão, defina o tema e o tamanho em `/etc/nocturne-greeter/environment` (o tema precisa estar instalado em `/usr/share/icons`):
+`/etc/nocturne-greeter/environment` ajusta o greeter à sua sessão. Somente as chaves abaixo são lidas, com valores simples e sem aspas:
 
 ```sh
-XCURSOR_THEME=Bibata-Modern-Ice
+XCURSOR_THEME=Bibata-Modern-Ice   # tema de cursor, instalado em /usr/share/icons
 XCURSOR_SIZE=24
+XKB_DEFAULT_LAYOUT=br             # layout para digitar a senha
+XKB_DEFAULT_VARIANT=abnt2
+NOCTURNE_LANGUAGE=pt-BR           # en ou pt-BR; sem ela, segue o LANG
+NOCTURNE_REDUCED_MOTION=1         # mantém o planeta parado
 ```
 
-A alteração vale no próximo início do greeter.
+As alterações valem no próximo início do greeter.
 
 ### Manutenção e diagnóstico
 
@@ -83,10 +95,11 @@ sudo /usr/lib/nocturne-greeter/nocturne-greeter-sessions
 - Escolha o usuário no menu disponível em repouso e a sessão no menu da barra inferior.
 - Digite a senha e pressione `Enter` ou clique na seta para entrar.
 - `Esc` fecha um menu aberto ou retorna ao repouso e limpa a senha.
+- Segure o ícone de olho, ao lado da seta, para ver a senha digitada. Caps Lock ligado aparece em lilás na linha de dica.
 - O menu de energia oferece suspender, reiniciar e desligar.
 - Use `Tab` para chegar ao botão de um menu, `Enter` ou `Espaço` para abrir, setas ou `Home`/`End` para navegar e `Enter`/`Espaço` para selecionar. `Esc` fecha e devolve o foco; `Tab` fecha e avança ao próximo controle.
 
-A interface está em inglês; a data segue o locale do Qt. As fontes usadas são **Noto Sans Light**, **Adwaita Sans** e, no debug, **Adwaita Mono**.
+A interface está em português (pt-BR) ou inglês, conforme `NOCTURNE_LANGUAGE` ou o `LANG`; a data acompanha o idioma. As fontes usadas são **Noto Sans Light**, **Adwaita Sans** e, no debug, **Adwaita Mono**.
 
 ## Preview
 
@@ -104,7 +117,7 @@ NOCTURNE_WINDOWED=1 NOCTURNE_WIDTH=1280 NOCTURNE_HEIGHT=720 ./scripts/run-previe
 
 No preview, `Enter` simula uma falha e `Ctrl+Enter` simula o sucesso visual. Os controles de energia ficam desabilitados e os indicadores de rede, áudio e bateria são somente leitura. Use texto de teste no campo de senha: esse modo não autentica nem inicia sessões.
 
-`NOCTURNE_DEBUG=1` revela os controles de desenvolvimento; `NOCTURNE_USER_NAME` altera o nome exibido. Em compositores com tiling, o layout do compositor pode substituir o tamanho solicitado.
+`NOCTURNE_DEBUG=1` revela os controles de desenvolvimento; `NOCTURNE_USER_NAME` altera o nome exibido; `NOCTURNE_LANGUAGE` e `NOCTURNE_REDUCED_MOTION` funcionam como no greeter instalado. Em compositores com tiling, o layout do compositor pode substituir o tamanho solicitado.
 
 ## Desenvolvimento e verificação
 
@@ -144,13 +157,17 @@ O harness interativo abre um KWin Wayland aninhado, com runtime, socket e D-Bus 
 
 Gera imagens de estados da interface em `docs/screenshots/final/`, nas dimensões 1280×720, 1920×1080, 2560×1440 e 3440×1440. Cada estado usa um processo de preview separado. As imagens são renderizadas em canvases Qt; isso não altera a resolução do monitor nem equivale a testar quatro monitores físicos.
 
+Para sequências de movimento, `NOCTURNE_CAPTURE_STATE=wait-at`, `failure-at` ou `power-at` com `NOCTURNE_CAPTURE_OFFSET` (ms) capturam a espera do PAM, a falha e o colapso de energia em instantes escolhidos; `NOCTURNE_PREVIEW_DELAY` simula o atraso do PAM.
+
 ## Arquitetura
 
 | Caminho | Papel |
 | --- | --- |
 | `greeter/shell.qml` | Entrada de produção para greetd |
 | `shell.qml` | Entrada do preview na sessão atual |
-| `components/GreeterWindow.qml` | Composição responsiva, foco e integração visual |
+| `components/GreeterWindow.qml` | Composição responsiva, foco, relógio do shader e transição de energia |
+| `components/theme/` | Tokens de cor e tipografia (`Theme`) e textos em pt-BR/inglês (`Strings`) |
+| `components/KeyboardStatus.qml` | Caps Lock pelos LEDs em `/sys/class/leds` e layout de teclado |
 | `components/GreeterController.qml` | Estados de repouso, autenticação, sucesso e falha |
 | `components/GreetdAuthenticator.qml`, `AuthenticatorBridge.qml` | Autenticação, prompts PAM e cancelamento |
 | `components/GreeterCatalog.qml`, `greeter-model.js` | Usuários, sessões e última escolha |
