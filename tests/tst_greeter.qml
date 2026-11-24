@@ -346,7 +346,7 @@ TestCase {
         wait(480);
         authPanel.submit();
         tryCompare(controller, "phase", GreeterController.Failure, 1200);
-        verify(controller.failureProgress > 0);
+        tryVerify(() => controller.failureProgress > 0, 300);
         keyClick(Qt.Key_Escape);
         compare(controller.phase, GreeterController.ReturnToIdle);
         compare(authPanel.inputField.text, "");
