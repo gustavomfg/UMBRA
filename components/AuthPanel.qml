@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import "theme"
 
 Item {
     id: root
@@ -108,16 +109,16 @@ Item {
         spacing: 10 * root.scaleFactor
         Text {
             text: "Welcome back,"
-            color: "#A6A6B0"
-            font.family: "Adwaita Sans"
+            color: Theme.secondary
+            font.family: Theme.sans
             font.pixelSize: 15 * root.scaleFactor
         }
         Text {
             width: root.width
             text: root.username
             elide: Text.ElideRight
-            color: "#F2F2F3"
-            font.family: "Adwaita Sans"
+            color: Theme.text
+            font.family: Theme.sans
             font.pixelSize: 37 * root.scaleFactor
             font.weight: Font.Normal
             font.letterSpacing: -.6 * root.scaleFactor
@@ -161,7 +162,7 @@ Item {
                         width: 5 * root.scaleFactor
                         height: width
                         radius: width / 2
-                        color: "#F2F2F3"
+                        color: Theme.text
                         opacity: appear * (root.showingHeldDots ? .45 : index === root.visiblePasswordDots - 1 ? .75 + .25 * root.controller.typingPulse : .75)
                         scale: (.35 + .65 * appear) * (index === root.visiblePasswordDots - 1
                                ? 1 + root.controller.typingPulse * .16 : 1)
@@ -172,8 +173,8 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.promptText
                 visible: passwordInput.length === 0 && !root.showingHeldDots
-                color: "#92929E"
-                font.family: "Adwaita Sans"
+                color: Theme.placeholder
+                font.family: Theme.sans
                 font.pixelSize: 15 * root.scaleFactor
                 textFormat: Text.PlainText
             }
@@ -184,12 +185,12 @@ Item {
                 activeFocusOnPress: true
                 echoMode: root.echoResponse ? TextInput.Normal : TextInput.Password
                 maximumLength: 256
-                color: root.echoResponse ? "#F2F2F3" : "transparent"
-                selectionColor: root.echoResponse ? "#5F4C88" : "transparent"
-                selectedTextColor: root.echoResponse ? "#FFFFFF" : "transparent"
+                color: root.echoResponse ? Theme.text : "transparent"
+                selectionColor: root.echoResponse ? Theme.selection : "transparent"
+                selectedTextColor: root.echoResponse ? Theme.selectedText : "transparent"
                 // Same metrics as the placeholder, centred on the field's line.
                 verticalAlignment: TextInput.AlignVCenter
-                font.family: "Adwaita Sans"
+                font.family: Theme.sans
                 font.pixelSize: 15 * root.scaleFactor
                 // The native caret follows hidden glyphs, not the dots; the
                 // field draws its own caret below.
@@ -232,7 +233,7 @@ Item {
             width: Math.max(1, Math.round(1.5 * root.scaleFactor))
             height: 18 * root.scaleFactor
             radius: width / 2
-            color: "#F2F2F3"
+            color: Theme.text
             visible: active
             SequentialAnimation on opacity {
                 id: caretBlink
@@ -253,7 +254,7 @@ Item {
             anchors.bottom: parent.bottom
             width: parent.width - (submitButton.width - 19 * root.scaleFactor) / 2
             height: 1
-            color: "#34343D"
+            color: Theme.outline
             opacity: 1 - root.controller.authenticationTension * .18
         }
         Rectangle {
@@ -263,7 +264,7 @@ Item {
             readonly property bool lit: passwordInput.activeFocus && !root.controller.failureNoticeVisible
             width: lit ? 42 * root.scaleFactor : 18 * root.scaleFactor
             height: 1
-            color: lit ? "#A78BFA" : "#34343D"
+            color: lit ? Theme.lilac : Theme.outline
             opacity: 1 - root.controller.authenticationTension * .18
             Behavior on width {
                 NumberAnimation {
@@ -298,8 +299,8 @@ Item {
         visible: !root.controller.statusMessageVisible
         opacity: root.hintReveal * (1 - root.failureCopy) * (root.preparingAuthentication ? Math.abs(1 - 2 * root.controller.authenticationTension) : 1 - root.controller.authenticationTension)
         text: root.preparingAuthentication && root.controller.authenticationTension >= .5 ? "Preparing your space" : "Enter to sign in  ·  Esc to return"
-        color: "#92929E"
-        font.family: "Adwaita Sans"
+        color: Theme.placeholder
+        font.family: Theme.sans
         font.pixelSize: 13 * root.scaleFactor
     }
     Text {
@@ -310,8 +311,8 @@ Item {
         visible: root.controller.statusMessageVisible && root.controller.phase !== GreeterController.Failure
         opacity: root.hintReveal * (1 - root.controller.authenticationTension)
         text: root.controller.statusMessage
-        color: root.controller.statusMessageIsError ? "#A78BFA" : "#92929E"
-        font.family: "Adwaita Sans"
+        color: root.controller.statusMessageIsError ? Theme.lilac : Theme.placeholder
+        font.family: Theme.sans
         font.pixelSize: 13 * root.scaleFactor
     }
     Text {
@@ -320,8 +321,8 @@ Item {
         wrapMode: Text.WordWrap
         opacity: root.hintReveal * root.failureCopy * (root.controller.statusMessageVisible && root.controller.phase !== GreeterController.Failure ? 0 : 1)
         text: "Couldn't sign in. Try again."
-        color: "#A78BFA"
-        font.family: "Adwaita Sans"
+        color: Theme.lilac
+        font.family: Theme.sans
         font.pixelSize: 13 * root.scaleFactor
     }
     Text {
@@ -329,8 +330,8 @@ Item {
         width: parent.width
         visible: root.debugMode
         text: "Preview only · Ctrl+Enter: success\n" + root.controller.statusMessage
-        color: "#A6A6B0"
-        font.family: "Adwaita Mono"
+        color: Theme.secondary
+        font.family: Theme.mono
         font.pixelSize: 10 * root.scaleFactor
     }
 }

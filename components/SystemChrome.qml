@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import "theme"
 
 Item {
     id: root
@@ -86,14 +87,14 @@ Item {
             width: Math.min(implicitWidth, root.width * .18)
             elide: Text.ElideRight
             anchors.verticalCenter: parent.verticalCenter
-            color: "#777781"
-            font.family: "Adwaita Sans"
+            color: Theme.quiet
+            font.family: Theme.sans
             font.pixelSize: 12 * root.scaleFactor
         }
         Rectangle {
             width: 1
             height: 12 * root.scaleFactor
-            color: "#34343D"
+            color: Theme.outline
             anchors.verticalCenter: parent.verticalCenter
         }
         Item {
@@ -118,13 +119,13 @@ Item {
                 id: userLabel
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.selectedUserIndex >= 0 && root.selectedUserIndex < root.userOptions.length ? root.userOptions[root.selectedUserIndex].displayName : ""
-                color: userMouse.containsMouse || userButton.activeFocus ? "#F2F2F3" : "#A6A6B0"
+                color: userMouse.containsMouse || userButton.activeFocus ? Theme.text : Theme.secondary
                 Behavior on color {
                     ColorAnimation {
                         duration: 140
                     }
                 }
-                font.family: "Adwaita Sans"
+                font.family: Theme.sans
                 font.pixelSize: 12 * root.scaleFactor
             }
             Image {
@@ -156,7 +157,7 @@ Item {
             visible: userButton.visible
             width: 1
             height: 12 * root.scaleFactor
-            color: "#34343D"
+            color: Theme.outline
             anchors.verticalCenter: parent.verticalCenter
         }
         Item {
@@ -180,13 +181,13 @@ Item {
                 id: sessionLabel
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.desktopSession
-                color: sessionMouse.containsMouse || sessionButton.activeFocus ? "#F2F2F3" : "#A6A6B0"
+                color: sessionMouse.containsMouse || sessionButton.activeFocus ? Theme.text : Theme.secondary
                 Behavior on color {
                     ColorAnimation {
                         duration: 140
                     }
                 }
-                font.family: "Adwaita Sans"
+                font.family: Theme.sans
                 font.pixelSize: 12 * root.scaleFactor
             }
             Image {
@@ -273,9 +274,9 @@ Item {
         width: 220 * root.scaleFactor
         height: powerColumn.implicitHeight + 36 * root.scaleFactor
         radius: 10 * root.scaleFactor
-        color: "#111116"
+        color: Theme.graphite
         border.width: 1
-        border.color: "#292930"
+        border.color: Theme.surfaceEdge
         visible: opacity > .001
         opacity: root.powerMenuOpen ? 1 : 0
         Behavior on opacity {
@@ -328,8 +329,8 @@ Item {
                         anchors.fill: parent
                         anchors.margins: -4 * root.scaleFactor
                         radius: 5 * root.scaleFactor
-                        color: "#1C1C24"
-                        border.color: "#A78BFA"
+                        color: Theme.menuActive
+                        border.color: Theme.lilac
                         border.width: 1
                         visible: powerRow.activeFocus
                     }
@@ -352,8 +353,8 @@ Item {
                         }
                         Text {
                             text: powerRow.modelData.name
-                            color: "#A6A6B0"
-                            font.family: "Adwaita Sans"
+                            color: Theme.secondary
+                            font.family: Theme.sans
                             font.pixelSize: 13 * root.scaleFactor
                         }
                     }
@@ -372,8 +373,8 @@ Item {
             Text {
                 visible: !root.powerActionsEnabled
                 text: root.powerUnavailableText
-                color: "#777781"
-                font.family: "Adwaita Sans"
+                color: Theme.quiet
+                font.family: Theme.sans
                 font.pixelSize: 11 * root.scaleFactor
             }
         }
@@ -398,9 +399,9 @@ Item {
         width: 260 * root.scaleFactor
         height: optionColumn.implicitHeight + 24 * root.scaleFactor
         radius: 10 * root.scaleFactor
-        color: "#111116"
+        color: Theme.graphite
         border.width: 1
-        border.color: "#292930"
+        border.color: Theme.surfaceEdge
         visible: opacity > .001
         opacity: open ? 1 : 0
         Behavior on opacity {
@@ -437,11 +438,11 @@ Item {
                     }
                     Keys.onPressed: event => root.menuKey(event, optionsRepeater, index, menu.trigger, activate)
                     border.width: activeFocus ? 1 : 0
-                    border.color: "#A78BFA"
+                    border.color: Theme.lilac
                     width: optionColumn.width
                     height: 34 * root.scaleFactor
                     radius: 7 * root.scaleFactor
-                    color: optionMouse.containsMouse || activeFocus ? "#1C1C24" : "transparent"
+                    color: optionMouse.containsMouse || activeFocus ? Theme.menuActive : "transparent"
                     Behavior on color {
                         ColorAnimation {
                             duration: 120
@@ -453,8 +454,8 @@ Item {
                         width: parent.width - 40 * root.scaleFactor
                         elide: Text.ElideRight
                         text: option.modelData[menu.labelKey]
-                        color: option.index === menu.selectedIndex ? "#F2F2F3" : "#A6A6B0"
-                        font.family: "Adwaita Sans"
+                        color: option.index === menu.selectedIndex ? Theme.text : Theme.secondary
+                        font.family: Theme.sans
                         font.pixelSize: 13 * root.scaleFactor
                     }
                     Image {
@@ -506,9 +507,9 @@ Item {
         width: 240 * root.scaleFactor
         height: 96 * root.scaleFactor
         radius: 10 * root.scaleFactor
-        color: "#111116"
+        color: Theme.graphite
         border.width: 1
-        border.color: "#292930"
+        border.color: Theme.surfaceEdge
         visible: opacity > .001
         opacity: root.sessionMenuOpen && root.sessionOptions.length === 0 ? 1 : 0
         Behavior on opacity {
@@ -523,14 +524,14 @@ Item {
             spacing: 12 * root.scaleFactor
             Text {
                 text: root.desktopSession
-                color: "#F2F2F3"
-                font.family: "Adwaita Sans"
+                color: Theme.text
+                font.family: Theme.sans
                 font.pixelSize: 14 * root.scaleFactor
             }
             Text {
                 text: root.sessionContextText
-                color: "#777781"
-                font.family: "Adwaita Sans"
+                color: Theme.quiet
+                font.family: Theme.sans
                 font.pixelSize: 11 * root.scaleFactor
             }
         }

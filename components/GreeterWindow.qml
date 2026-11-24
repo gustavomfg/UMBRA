@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import "greeter-model.js" as Model
+import "theme"
 
 FloatingWindow {
     id: window
@@ -51,7 +52,7 @@ FloatingWindow {
     implicitHeight: windowedPreview ? requestedHeight : (primaryScreen ? primaryScreen.height : 1080)
     screen: primaryScreen
     fullscreen: !windowedPreview
-    color: "#000000"
+    color: Theme.black
     title: window.windowTitle
     property real shaderTime: 0
     // Freezes the ambient orbit; state transitions still play.
@@ -97,7 +98,7 @@ FloatingWindow {
         }
         Rectangle {
             anchors.fill: parent
-            color: "#000000"
+            color: Theme.black
         }
         MouseArea {
             anchors.fill: parent
@@ -198,8 +199,8 @@ FloatingWindow {
                 visible: opacity > .001
                 Text {
                     text: "Press a key to enter"
-                    color: "#92929E"
-                    font.family: "Adwaita Sans"
+                    color: Theme.placeholder
+                    font.family: Theme.sans
                     font.pixelSize: 13 * window.uiScale
                 }
                 Image {
@@ -269,9 +270,9 @@ FloatingWindow {
             wrapMode: Text.WordWrap
             textFormat: Text.PlainText
             text: window.noticeText
-            color: "#A78BFA"
+            color: Theme.lilac
             opacity: window.successPresence(.05, .50, greeterController.successProgress)
-            font.family: "Adwaita Sans"
+            font.family: Theme.sans
             font.pixelSize: 12 * window.uiScale
         }
         Rectangle {
@@ -280,7 +281,7 @@ FloatingWindow {
             // previous frame can show through while the launch gate runs.
             anchors.fill: parent
             z: 1000
-            color: "#000000"
+            color: Theme.black
             visible: greeterController.successComplete
             MouseArea {
                 anchors.fill: parent
@@ -294,8 +295,8 @@ FloatingWindow {
             x: window.edgeMargin
             y: parent.height - 16
             text: "PREVIEW  ·  " + canvas.width + " × " + canvas.height + "  ·  phase " + greeterController.phase
-            color: "#777781"
-            font.family: "Adwaita Mono"
+            color: Theme.quiet
+            font.family: Theme.mono
             font.pixelSize: 10
         }
     }
