@@ -9,18 +9,34 @@ Item {
     required property string outputDirectory
     required property string selectedState
     property int step: 0
+    // "failure-at" / "wait-at": capture this many ms after the rejection /
+    // after Enter, for frame sequences of the failure motion.
+    property int offset: 0
     function capture(name) {
         if (name !== selectedState)
             return;
         sequence.stop();
+        const tag = name === "failure-at" || name === "wait-at" ? name + "-" + String(offset).padStart(4, "0") : name;
         targetItem.grabToImage(function (result) {
-            const path = outputDirectory + "/" + targetItem.width + "x" + targetItem.height + "-" + name + ".png";
+            const path = outputDirectory + "/" + targetItem.width + "x" + targetItem.height + "-" + tag + ".png";
             if (!result.saveToFile(path))
                 console.error("Capture failed:", path);
             else
                 console.info("Captured", path);
             Qt.quit();
         });
+    }
+    Timer {
+        id: offsetTimer
+        repeat: false
+        onTriggered: root.capture(root.selectedState)
+    }
+    Connections {
+        target: root.controller
+        function onPhaseChanged() {
+            if (root.selectedState === "failure-at" && root.controller.phase === GreeterController.Failure)
+                offsetTimer.restart();
+        }
     }
     Timer {
         id: sequence
@@ -86,6 +102,13 @@ Item {
                 break;
             case 6:
                 root.authPanel.submit();
+                if (root.selectedState === "failure-at" || root.selectedState === "wait-at") {
+                    offsetTimer.interval = Math.max(1, root.offset);
+                    if (root.selectedState === "wait-at")
+                        offsetTimer.restart();
+                    sequence.stop();
+                    break;
+                }
                 interval = root.selectedState === "submit-feedback" ? 90 : root.selectedState === "authenticating" ? 180 : root.selectedState === "failure" ? 510 : 450;
                 break;
             case 7:

@@ -34,6 +34,8 @@ ShellRoot {
     PreviewAuthenticator {
         id: previewBackend
         controller: preview.controller
+        // Emulate pam_faildelay in captures (default 360 ms).
+        responseDelay: Number(Quickshell.env("NOCTURNE_PREVIEW_DELAY")) || 360
     }
 
     AuthenticatorBridge {
@@ -53,6 +55,7 @@ ShellRoot {
             chrome: preview.chrome
             outputDirectory: preview.captureDir
             selectedState: Quickshell.env("NOCTURNE_CAPTURE_STATE") || "idle"
+            offset: Number(Quickshell.env("NOCTURNE_CAPTURE_OFFSET")) || 0
         }
     }
 }
