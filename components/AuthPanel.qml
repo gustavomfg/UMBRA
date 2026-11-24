@@ -81,6 +81,7 @@ Item {
             height: parent.height
             clip: true
             Row {
+                id: dotsRow
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 10 * root.scaleFactor
@@ -127,7 +128,14 @@ Item {
                 color: root.echoResponse ? "#F2F2F3" : "transparent"
                 selectionColor: root.echoResponse ? "#5F4C88" : "transparent"
                 selectedTextColor: root.echoResponse ? "#FFFFFF" : "transparent"
-                cursorVisible: root.echoResponse && activeFocus
+                // Same metrics as the placeholder, centred on the field's line.
+                verticalAlignment: TextInput.AlignVCenter
+                font.family: "Adwaita Sans"
+                font.pixelSize: 15 * root.scaleFactor
+                // The native caret follows hidden glyphs, not the dots; the
+                // field draws its own caret below.
+                cursorDelegate: Item {}
+                onTextChanged: caretBlink.restart()
                 inputMethodHints: root.echoResponse
                                   ? Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
                                   : Qt.ImhHiddenText | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
@@ -147,6 +155,43 @@ Item {
                 onTextEdited: root.controller.noteKey()
                 onAccepted: root.submit()
             }
+        }
+        Rectangle {
+            id: caret
+            objectName: "caret"
+            readonly property bool active: passwordInput.activeFocus && root.controller.acceptsKeyboardInput
+            // After the last dot, at the native cursor for visible responses,
+            // or just before the placeholder when the field is empty.
+            x: root.echoResponse ? passwordInput.cursorRectangle.x
+               : root.visiblePasswordDots > 0 ? dotsRow.width + 8 * root.scaleFactor
+               : -5 * root.scaleFactor
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.max(1, Math.round(1.5 * root.scaleFactor))
+            height: 18 * root.scaleFactor
+            radius: width / 2
+            color: "#F2F2F3"
+            visible: active
+            SequentialAnimation on opacity {
+                id: caretBlink
+                running: caret.active
+                loops: Animation.Infinite
+                alwaysRunToEnd: false
+                PropertyAction { value: 1 }
+                PauseAnimation { duration: 560 }
+                NumberAnimation { to: 0; duration: 100 }
+                PauseAnimation { duration: 440 }
+                NumberAnimation { to: 1; duration: 100 }
+            }
+        }
+        Rectangle {
+            // Full-width base of the field, ending under the arrow glyph.
+            objectName: "fieldTrack"
+            anchors.left: parent.left
+            anchors.bottom: parent.bottom
+            width: parent.width - (submitButton.width - 19 * root.scaleFactor) / 2
+            height: 1
+            color: "#34343D"
+            opacity: 1 - root.controller.authenticationTension * .18
         }
         Rectangle {
             anchors.left: parent.left
@@ -175,7 +220,7 @@ Item {
             width: 44 * root.scaleFactor
             height: width
             icon: "../assets/icons/arrow.svg"
-            label: "Unlock"
+            label: "Sign in"
             scaleFactor: root.scaleFactor
             enabled: root.controller.acceptsKeyboardInput
             onClicked: root.submit()
@@ -187,10 +232,10 @@ Item {
         wrapMode: Text.WordWrap
         visible: !root.controller.statusMessageVisible
         opacity: root.hintReveal * (root.controller.phase === GreeterController.Failure ? Math.max(0, 1 - root.controller.failureProgress / root.failureCopyHandoff) : root.preparingAuthentication ? Math.abs(1 - 2 * root.controller.authenticationTension) : 1 - root.controller.authenticationTension)
-        text: root.controller.phase === GreeterController.Failure && !root.controller.failureResolving ? "Preparing your space" : root.preparingAuthentication && root.controller.authenticationTension >= .5 ? "Preparing your space" : "Enter to unlock  ·  Esc to return"
-        color: "#777781"
+        text: root.controller.phase === GreeterController.Failure && !root.controller.failureResolving ? "Preparing your space" : root.preparingAuthentication && root.controller.authenticationTension >= .5 ? "Preparing your space" : "Enter to sign in  ·  Esc to return"
+        color: "#92929E"
         font.family: "Adwaita Sans"
-        font.pixelSize: 12 * root.scaleFactor
+        font.pixelSize: 13 * root.scaleFactor
     }
     Text {
         y: 196 * root.scaleFactor + (1 - root.hintReveal) * 8
@@ -202,17 +247,17 @@ Item {
         text: root.controller.statusMessage
         color: root.controller.statusMessageIsError ? "#A78BFA" : "#92929E"
         font.family: "Adwaita Sans"
-        font.pixelSize: 12 * root.scaleFactor
+        font.pixelSize: 13 * root.scaleFactor
     }
     Text {
         y: 196 * root.scaleFactor + (1 - root.hintReveal) * 8
         width: parent.width
         wrapMode: Text.WordWrap
         opacity: root.hintReveal * (root.controller.phase === GreeterController.Failure ? Math.max(0, Math.min(1, (root.controller.failureProgress - root.failureCopyHandoff) / (1 - root.failureCopyHandoff))) : 0)
-        text: "Couldn't unlock. Try again."
+        text: "Couldn't sign in. Try again."
         color: "#A78BFA"
         font.family: "Adwaita Sans"
-        font.pixelSize: 12 * root.scaleFactor
+        font.pixelSize: 13 * root.scaleFactor
     }
     Text {
         y: 238 * root.scaleFactor
