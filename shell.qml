@@ -11,6 +11,12 @@ ShellRoot {
         id: liveStatus
     }
 
+    KeyboardStatus {
+        id: keyboard
+        active: preview.controller.authUiVisible
+        layout: Quickshell.env("XKB_DEFAULT_LAYOUT") || ""
+    }
+
     GreeterWindow {
         id: preview
         windowedPreview: Quickshell.env("NOCTURNE_WINDOWED") === "1"
@@ -28,6 +34,8 @@ ShellRoot {
         windowTitle: "UMBRA · Preview"
         statusModel: liveStatus
         previewShortcutsEnabled: true
+        capsLockOn: keyboard.capsLock || Quickshell.env("NOCTURNE_PREVIEW_CAPSLOCK") === "1"
+        keyboardLayout: keyboard.layout
         reducedMotion: Quickshell.env("NOCTURNE_REDUCED_MOTION") === "1"
     }
 

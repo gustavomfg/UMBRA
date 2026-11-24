@@ -12,6 +12,9 @@ Item {
     property bool echoResponse: false
     property real scaleFactor: 1
     property bool debugMode: false
+    property bool capsLockOn: false
+    // XKB layout(s) of the greeter compositor, e.g. "br" or "us,br".
+    property string keyboardLayout: ""
     property bool previewShortcutsEnabled: false
     property alias inputField: passwordInput
     readonly property real identityReveal: Math.max(0, Math.min(1, (controller.authReveal - .36) / .64))
@@ -324,6 +327,32 @@ Item {
         color: Theme.lilac
         font.family: Theme.sans
         font.pixelSize: 13 * root.scaleFactor
+    }
+    // Caps Lock (lilac, it changes what the password is) and the layout.
+    Row {
+        objectName: "keyboardIndicator"
+        anchors.right: parent.right
+        // Ends under the arrow glyph, like the field track.
+        anchors.rightMargin: (44 - 19) / 2 * root.scaleFactor
+        y: 196 * root.scaleFactor + (1 - root.hintReveal) * 8
+        spacing: 8 * root.scaleFactor
+        opacity: root.hintReveal * (1 - root.controller.authenticationTension)
+        visible: root.capsLockOn || root.keyboardLayout.length > 0
+        Text {
+            objectName: "capsLockIndicator"
+            visible: root.capsLockOn
+            text: "Caps Lock"
+            color: Theme.lilac
+            font.family: Theme.sans
+            font.pixelSize: 13 * root.scaleFactor
+        }
+        Text {
+            visible: root.keyboardLayout.length > 0
+            text: root.keyboardLayout.toUpperCase().replace(/,/g, " · ")
+            color: Theme.quiet
+            font.family: Theme.sans
+            font.pixelSize: 13 * root.scaleFactor
+        }
     }
     Text {
         y: 238 * root.scaleFactor

@@ -50,6 +50,12 @@ ShellRoot {
         sessionCommandPrefix: policy.sessionCommandPrefix
     }
 
+    KeyboardStatus {
+        id: keyboard
+        active: greeter.controller.authUiVisible
+        layout: Quickshell.env("XKB_DEFAULT_LAYOUT") || ""
+    }
+
     GreeterSystemStatus {
         id: systemStatus
         desktopSession: catalog.selectedSessionName
@@ -71,6 +77,8 @@ ShellRoot {
         responseRequired: boundary.responseRequired
         echoResponse: boundary.echoResponse
         previewShortcutsEnabled: false
+        capsLockOn: keyboard.capsLock
+        keyboardLayout: keyboard.layout
         reducedMotion: Quickshell.env("NOCTURNE_REDUCED_MOTION") === "1"
         sessionContextText: "Session"
         powerUnavailableText: "Unavailable"

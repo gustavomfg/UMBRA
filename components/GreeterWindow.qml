@@ -26,6 +26,9 @@ FloatingWindow {
     property bool echoResponse: false
     property var statusModel: null
     property bool previewShortcutsEnabled: false
+    // Keyboard state from KeyboardStatus (shell-level, reads sysfs).
+    property bool capsLockOn: false
+    property string keyboardLayout: ""
     property string sessionContextText: "Selected session"
     property string powerUnavailableText: "Unavailable"
     property string audioUnavailableText: "Audio unavailable"
@@ -222,6 +225,8 @@ FloatingWindow {
                 echoResponse: window.echoResponse
                 scaleFactor: window.uiScale
                 debugMode: window.debugMode
+                capsLockOn: window.capsLockOn
+                keyboardLayout: window.keyboardLayout
                 previewShortcutsEnabled: window.previewShortcutsEnabled
                 visible: greeterController.authUiVisible
                 opacity: window.successPresence(.05, .50, greeterController.successProgress)

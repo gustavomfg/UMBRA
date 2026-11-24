@@ -35,6 +35,7 @@ common_components=(
     SessionLaunchGate.qml
     SessionLaunchPolicy.qml
     SystemChrome.qml
+    KeyboardStatus.qml
     greeter-model.js
     theme/qmldir
     theme/Theme.qml

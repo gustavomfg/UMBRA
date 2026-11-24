@@ -7,5 +7,9 @@
 #XCURSOR_THEME=Adwaita
 #XCURSOR_SIZE=24
 #
+# Keyboard layout for typing the password (Cage), shown beside the hint.
+#XKB_DEFAULT_LAYOUT=br
+#XKB_DEFAULT_VARIANT=abnt2
+#
 # 1 keeps the planet still (state transitions still play).
 #NOCTURNE_REDUCED_MOTION=1
