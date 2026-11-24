@@ -62,10 +62,11 @@ void main(){
         vec3 L=normalize(vec3(-.65,-.75,.38));
         float diffuse=max(dot(n,L),0.);
         float terrain=noise(p*17.+vec2(time*.006,0.))*.65+noise(p*43.)*.35;
-        float limb=pow(1.-max(n.z,0.),5.5);
+        float limb=pow(1.-max(n.z,0.),4.6);
         float lit=pow(max(dot(n,L),0.),1.6);
         vec3 surface=vec3(.015,.014,.020)*( .18+diffuse*(.75+.3*terrain));
-        surface+=mix(violet,silver,.45)*limb*lit*.52;
+        // Rim light on the lit (left) limb keeps the silhouette apart from the ring shadow.
+        surface+=mix(violet,silver,.45)*limb*lit*.74;
         surface+=silver*pow(diffuse,5.)*.035*(.4+terrain*.6);
         color=mix(color,surface,mask);
     }
