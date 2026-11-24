@@ -114,7 +114,7 @@ FloatingWindow {
             width: canvas.narrow ? canvas.width * 1.15 : Math.min(canvas.width * .74, canvas.height * 1.85)
             height: canvas.height * (canvas.narrow ? .66 : .84)
             x: canvas.width * (canvas.narrow ? .58 : canvas.width / canvas.height > 2.1 ? .65 : .64) - width / 2
-            y: canvas.height * (canvas.narrow ? .35 : .51) - height / 2
+            y: canvas.height * (canvas.narrow ? .33 : .51) - height / 2
             time: window.shaderTime
             authProgress: greeterController.authReveal
             wakePulse: greeterController.wakeTension
@@ -166,7 +166,7 @@ FloatingWindow {
         Item {
             id: editorial
             x: window.edgeMargin
-            y: canvas.height * (canvas.narrow ? .63 : .35)
+            y: canvas.height * (canvas.narrow ? .585 : .35)
             width: canvas.narrow ? Math.min(canvas.width - window.edgeMargin * 2, 380 * window.uiScale) : canvas.leftColumnWidth
             height: 290 * window.uiScale
             ClockDisplay {

@@ -136,7 +136,7 @@ A composição implementada tem coluna editorial à esquerda, fenômeno à direi
 - Coluna: `min(width × 0.27, 340 × uiScale)`; origem vertical em 35% da altura.
 - Hero: largura `min(width × 0.74, height × 1.85)`, altura 84%; centro em 64% da largura e 51% da altura. Os anéis ficam inteiros dentro do quadro em todas as proporções.
 - Acima de aspect ratio 2.1, o centro horizontal do hero passa a 65%.
-- Abaixo de aspect ratio 1.45, hero em cima, coluna a 63% da altura, largura limitada por margens e `380 × uiScale`; hero com largura de 115% e altura de 66%, centro em 58%/35%.
+- Abaixo de aspect ratio 1.45, hero em cima, coluna a 58,5% da altura, largura limitada por margens e `380 × uiScale`; hero com largura de 115% e altura de 66%, centro em 58%/33%.
 - Rodapé: controles de 40 unidades e afastamento inferior de 28 unidades, ambos escalados.
 
 Estas fórmulas descrevem esta tela; não obrigam outras superfícies Nocturne a copiar a mesma composição. As capturas em quatro resoluções são evidência de renderização virtual do Qt, não testes físicos de quatro monitores.
