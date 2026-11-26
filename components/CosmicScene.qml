@@ -10,8 +10,6 @@ Item {
     property real failureProgress: 0
     property real successProgress: 0
     property real authenticationTension: 0
-    // The lock passes its blended variant (shaders/pulse-lock.frag.qsb).
-    property url shader: Qt.resolvedUrl("../shaders/pulse.frag.qsb")
 
     ShaderEffect {
         anchors.fill: parent
@@ -25,6 +23,6 @@ Item {
         property real successProgress: root.successProgress
         property real authenticationTension: root.authenticationTension
 
-        fragmentShader: root.shader
+        fragmentShader: Qt.resolvedUrl("../shaders/pulse.frag.qsb")
     }
 }
