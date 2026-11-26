@@ -20,6 +20,23 @@ ShellRoot {
     property bool failed: false
     // Bumped on every rejected password so surfaces can replay the wave.
     property int failureCount: 0
+    // Screenshot taken by lock/umbra-lock just before locking (0600, in
+    // XDG_RUNTIME_DIR, removed by the launcher when the lock exits).
+    readonly property string backgroundPath: Quickshell.env("UMBRA_LOCK_BACKGROUND") || ""
+    // Whole output layout, to crop a multi-output screenshot per screen.
+    readonly property rect layoutRect: {
+        const list = Quickshell.screens;
+        if (list.length === 0)
+            return Qt.rect(0, 0, 0, 0);
+        let x0 = list[0].x, y0 = list[0].y, x1 = x0 + list[0].width, y1 = y0 + list[0].height;
+        for (let i = 1; i < list.length; ++i) {
+            x0 = Math.min(x0, list[i].x);
+            y0 = Math.min(y0, list[i].y);
+            x1 = Math.max(x1, list[i].x + list[i].width);
+            y1 = Math.max(y1, list[i].y + list[i].height);
+        }
+        return Qt.rect(x0, y0, x1 - x0, y1 - y0);
+    }
 
     Component.onCompleted: {
         const chosen = Quickshell.env("NOCTURNE_LANGUAGE") || "";
@@ -83,13 +100,16 @@ ShellRoot {
         locked: true
 
         WlSessionLockSurface {
+            id: lockSurface
             color: Theme.black
             LockSurface {
                 anchors.fill: parent
                 busy: root.busy
-                failed: root.failed
                 failureCount: root.failureCount
                 stats: systemStats
+                backgroundSource: root.backgroundPath.length > 0 ? "file://" + root.backgroundPath : ""
+                screenRect: lockSurface.screen ? Qt.rect(lockSurface.screen.x, lockSurface.screen.y, lockSurface.screen.width, lockSurface.screen.height) : Qt.rect(0, 0, width, height)
+                layoutRect: root.layoutRect.width > 0 ? root.layoutRect : screenRect
                 onSubmitted: password => root.submit(password)
             }
         }

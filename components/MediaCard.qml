@@ -10,6 +10,10 @@ Item {
     id: card
 
     property real scaleFactor: 1
+    // Preview/captures only: a stand-in with the MPRIS fields used here.
+    property var previewPlayer: null
+    property bool preferPreview: false
+    signal interacted
 
     readonly property var player: {
         const list = Mpris.players.values;
@@ -22,12 +26,13 @@ Item {
             if (!spotify && (candidate.identity === "Spotify" || candidate.desktopEntry === "spotify"))
                 spotify = candidate;
         }
-        return playing ? playing : spotify ? spotify : (list.length > 0 ? list[0] : null);
+        const found = playing ? playing : spotify ? spotify : (list.length > 0 ? list[0] : null);
+        return preferPreview && previewPlayer ? previewPlayer : found ? found : previewPlayer;
     }
     readonly property bool shown: player !== null && player.trackTitle.length > 0
-    readonly property real artSize: 60 * scaleFactor
+    readonly property real artSize: 48 * scaleFactor
 
-    implicitHeight: shown ? artSize + 14 * scaleFactor : 0
+    implicitHeight: shown ? artSize : 0
     height: implicitHeight
     visible: shown
     opacity: shown ? 1 : 0
@@ -96,7 +101,7 @@ Item {
         anchors.right: controls.left
         anchors.rightMargin: 10 * card.scaleFactor
         anchors.top: artFrame.top
-        anchors.topMargin: 4 * card.scaleFactor
+        anchors.topMargin: 2 * card.scaleFactor
         spacing: 3 * card.scaleFactor
 
         Text {
@@ -105,7 +110,7 @@ Item {
             color: Theme.text
             elide: Text.ElideRight
             font.family: Theme.sans
-            font.pixelSize: 15 * card.scaleFactor
+            font.pixelSize: 14 * card.scaleFactor
         }
         Text {
             width: parent.width
@@ -117,7 +122,7 @@ Item {
         }
     }
 
-    // Hairline progress, lilac like the password line.
+    // Hairline progress in the quiet tone (lilac is reserved for focus/feedback).
     Rectangle {
         anchors.left: text.left
         anchors.right: text.right
@@ -129,7 +134,7 @@ Item {
 
         Rectangle {
             height: 1
-            color: Theme.lilac
+            color: Theme.secondary
             width: card.shown && card.player.length > 0 ? parent.width * Math.max(0, Math.min(1, card.player.position / card.player.length)) : 0
             Behavior on width {
                 NumberAnimation {
@@ -143,28 +148,37 @@ Item {
     Row {
         id: controls
         anchors.right: parent.right
-        anchors.top: artFrame.top
+        anchors.verticalCenter: artFrame.verticalCenter
         spacing: 0
         IconButton {
             icon: Qt.resolvedUrl("../assets/icons/media-prev.svg")
-            label: Strings.pt ? "Anterior" : "Previous"
+            label: Strings.previous
             scaleFactor: card.scaleFactor * .8
             enabled: card.shown && card.player.canGoPrevious
-            onClicked: card.player.previous()
+            onClicked: {
+                card.player.previous();
+                card.interacted();
+            }
         }
         IconButton {
             icon: card.shown && card.player.isPlaying ? Qt.resolvedUrl("../assets/icons/media-pause.svg") : Qt.resolvedUrl("../assets/icons/media-play.svg")
-            label: Strings.pt ? "Reproduzir ou pausar" : "Play or pause"
+            label: Strings.playPause
             scaleFactor: card.scaleFactor * .8
             enabled: card.shown && card.player.canTogglePlaying
-            onClicked: card.player.togglePlaying()
+            onClicked: {
+                card.player.togglePlaying();
+                card.interacted();
+            }
         }
         IconButton {
             icon: Qt.resolvedUrl("../assets/icons/media-next.svg")
-            label: Strings.pt ? "Próxima" : "Next"
+            label: Strings.next
             scaleFactor: card.scaleFactor * .8
             enabled: card.shown && card.player.canGoNext
-            onClicked: card.player.next()
+            onClicked: {
+                card.player.next();
+                card.interacted();
+            }
         }
     }
 }

@@ -1,55 +1,87 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import "theme"
 
-// One screen of the lock: planet, clock, password line and the player card.
+// One screen of the lock: blurred desktop + planet behind a single frosted
+// panel holding the clock, identity, password line, player and readings.
 Item {
     id: surface
 
     property bool busy: false
-    property bool failed: false
     property int failureCount: 0
     property var stats: null
+    // Blurred desktop (see LockBackdrop); "" keeps the black scene.
+    property url backgroundSource: ""
+    property rect screenRect: Qt.rect(0, 0, width, height)
+    property rect layoutRect: Qt.rect(0, 0, width, height)
+    // Preview/captures only.
+    property var previewPlayer: null
+    property bool preferPreviewPlayer: false
+    property bool capsLockOverride: false
     signal submitted(string password)
 
     readonly property real uiScale: Math.max(1, Math.min(1.35, height / 900))
-    readonly property real edgeMargin: Math.max(42, Math.min(width * .075, 220))
+    readonly property real s: uiScale
     readonly property bool narrow: width / height < 1.45
     property bool reducedMotion: Quickshell.env("NOCTURNE_REDUCED_MOTION") === "1"
+    readonly property string userName: Quickshell.env("USER") || "user"
 
     // ---- intro -----------------------------------------------------------
-    opacity: 0
     NumberAnimation on opacity {
         from: 0
         to: 1
-        duration: 900
-        easing.type: Easing.InOutSine
+        duration: 600
+        easing.type: Easing.OutCubic
     }
 
     // ---- shader clock ----------------------------------------------------
-    // Idle drops to ~30 fps; typing and PAM run at display rate.
+    // Typing, PAM and the failure wave run at display rate (vsync-locked);
+    // idle redraws at ~30 fps on whole display frames, as in the greeter.
     property real shaderTime: 0
-    property real lastTick: Date.now()
-    readonly property bool interacting: input.text.length > 0 || busy || failureTimeline.running
-    function advance() {
-        const now = Date.now();
-        const seconds = Math.min((now - lastTick) / 1000, .05);
-        lastTick = now;
+    readonly property bool interacting: field.hasText || busy || failureTimeline.running || typingPulse > 0
+    function advance(seconds) {
         if (!reducedMotion)
-            shaderTime += seconds * (1 - tension * .15);
+            shaderTime += Math.min(seconds, .05) * (1 - tension * .15) * recoil(failureProgress);
+    }
+    // Rejection recoil of the orbit speed: 1 -> 0.6 -> 1.4 -> 1.
+    function recoil(t) {
+        if (t <= 0 || t >= 1)
+            return 1;
+        const ease = u => u * u * (3 - 2 * u);
+        if (t < .12)
+            return 1 - .4 * ease(t / .12);
+        if (t < .38)
+            return .6 + .8 * ease((t - .12) / .26);
+        return 1.4 - .4 * ease((t - .38) / .62);
     }
     FrameAnimation {
-        running: surface.visible && surface.interacting
-        onRunningChanged: if (running) surface.lastTick = Date.now()
-        onTriggered: surface.advance()
+        id: refreshProbe
+        property real refresh: 60
+        property real total: 0
+        property int samples: 0
+        running: surface.visible && samples < 60
+        onTriggered: {
+            if (currentFrame < 10 || frameTime <= 0 || frameTime > .05)
+                return;
+            total += frameTime;
+            samples += 1;
+            if (samples === 60)
+                refresh = Math.max(24, Math.min(360, 60 / total));
+        }
+    }
+    FrameAnimation {
+        running: surface.visible && surface.interacting && !surface.reducedMotion
+        onTriggered: surface.advance(frameTime)
     }
     Timer {
-        interval: 33
+        readonly property int framesPerTick: Math.max(1, Math.round(refreshProbe.refresh / 30))
+        readonly property real tickSeconds: framesPerTick / refreshProbe.refresh
+        interval: Math.max(1, Math.round(tickSeconds * 1000))
         repeat: true
-        running: surface.visible && !surface.interacting
-        onRunningChanged: if (running) surface.lastTick = Date.now()
-        onTriggered: surface.advance()
+        running: surface.visible && !surface.interacting && !surface.reducedMotion
+        onTriggered: surface.advance(tickSeconds)
     }
 
     // ---- scene state -----------------------------------------------------
@@ -72,11 +104,8 @@ Item {
         onFinished: surface.failureProgress = 0
     }
     onFailureCountChanged: {
-        if (failureCount > 0) {
-            input.text = "";
+        if (failureCount > 0)
             failureTimeline.restart();
-            input.forceActiveFocus();
-        }
     }
     property real typingPulse: 0
     NumberAnimation {
@@ -85,36 +114,45 @@ Item {
         property: "typingPulse"
         from: 1
         to: 0
-        duration: 480
+        duration: 280
         easing.type: Easing.OutCubic
     }
 
-    CosmicScene {
-        // Same framing as the greeter's hero.
-        width: surface.narrow ? surface.width * 1.15 : Math.min(surface.width * .74, surface.height * 1.85)
-        height: surface.height * (surface.narrow ? .66 : .84)
-        x: surface.width * (surface.narrow ? .58 : surface.width / surface.height > 2.1 ? .65 : .64) - width / 2
-        y: surface.height * (surface.narrow ? .33 : .51) - height / 2
-        time: surface.shaderTime
-        authProgress: 0
-        wakePulse: 0
-        typingPulse: surface.typingPulse
-        failureProgress: surface.failureProgress
-        successProgress: 0
-        authenticationTension: surface.tension
+    // ---- background --------------------------------------------------------
+    Item {
+        id: backdrop
+        anchors.fill: parent
+
+        LockBackdrop {
+            anchors.fill: parent
+            source: surface.backgroundSource
+            screenRect: surface.screenRect
+            layoutRect: surface.layoutRect
+        }
+        CosmicScene {
+            // The greeter's hero framing: the planet stays the main element.
+            width: surface.narrow ? surface.width * 1.15 : Math.min(surface.width * .74, surface.height * 1.85)
+            height: surface.height * (surface.narrow ? .66 : .84)
+            x: surface.width * (surface.narrow ? .58 : surface.width / surface.height > 2.1 ? .65 : .64) - width / 2
+            y: surface.height * (surface.narrow ? .33 : .51) - height / 2
+            shader: Qt.resolvedUrl("../shaders/pulse-lock.frag.qsb")
+            time: surface.shaderTime
+            typingPulse: surface.typingPulse
+            failureProgress: surface.failureProgress
+            authenticationTension: surface.tension
+        }
     }
 
     KeyboardStatus {
         id: keyboard
         active: surface.visible
     }
-
     SystemClock {
         id: clock
         precision: SystemClock.Minutes
     }
 
-    // ---- helpers ---------------------------------------------------------
+    // ---- helpers -----------------------------------------------------------
     function uptimeText(total) {
         const d = Math.floor(total / 86400);
         const h = Math.floor(total % 86400 / 3600);
@@ -125,248 +163,255 @@ Item {
             return h + "h" + (m < 10 ? "0" : "") + m + "m";
         return m + "m";
     }
-    readonly property string userName: Quickshell.env("USER") || "user"
-    readonly property real cardWidth: Math.min(width * .27, 340 * uiScale) + 80 * uiScale
-    readonly property real pad: 24 * uiScale
+    function refocus() {
+        if (surface.visible)
+            field.focusInput();
+    }
 
-    // ---- left column: clock, sign-in, player -----------------------------
-    Column {
-        id: cards
-        x: surface.edgeMargin
-        anchors.verticalCenter: parent.verticalCenter
-        width: surface.cardWidth
-        spacing: 14 * surface.uiScale
+    // Anything that takes focus (media buttons, clicks) hands it back, so the
+    // keyboard always types into the password.
+    MouseArea {
+        anchors.fill: parent
+        onClicked: surface.refocus()
+    }
 
+    // ---- frosted panel -------------------------------------------------------
+    readonly property real pad: 30 * s
+    readonly property real panelWidth: Math.min(width - 48 * s, 480 * s)
+
+    Item {
+        id: panel
+        width: surface.panelWidth
+        height: content.implicitHeight + 2 * surface.pad
+        // Left of the planet, over the tip of its rings; centred on narrow
+        // screens where the planet sits above.
+        x: surface.narrow ? (surface.width - width) / 2 : Math.max(48 * surface.s, surface.width * .25 - width / 2)
+        y: surface.narrow ? Math.min(surface.height - height - 48 * surface.s, surface.height * .56) : (surface.height - height) / 2
+
+        // Glass: the scene behind the panel, blurred, inside rounded corners.
+        ShaderEffectSource {
+            id: behind
+            sourceItem: backdrop
+            sourceRect: Qt.rect(panel.x, panel.y, panel.width, panel.height)
+            textureSize: Qt.size(Math.max(1, panel.width / 2), Math.max(1, panel.height / 2))
+            live: true
+            visible: false
+            anchors.fill: parent
+        }
+        Rectangle {
+            id: glassMask
+            anchors.fill: parent
+            radius: rim.radius
+            visible: false
+            layer.enabled: true
+        }
+        MultiEffect {
+            anchors.fill: parent
+            source: behind
+            blurEnabled: true
+            blur: 1
+            blurMax: 48
+            saturation: -.2
+            maskEnabled: true
+            maskSource: glassMask
+            autoPaddingEnabled: false
+        }
         LockCard {
-            width: parent.width
-            height: 148 * surface.uiScale
-            scaleFactor: surface.uiScale
+            id: rim
+            anchors.fill: parent
+            scaleFactor: surface.s
+        }
 
-            Column {
-                anchors.left: parent.left
-                anchors.leftMargin: surface.pad
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 6 * surface.uiScale
+        Column {
+            id: content
+            x: surface.pad
+            y: surface.pad
+            width: parent.width - 2 * surface.pad
+            spacing: 0
+
+            // Clock and date, uptime on the right.
+            Item {
+                width: parent.width
+                height: clockText.height + dateText.height + 4 * surface.s
                 Text {
+                    id: clockText
                     text: Qt.formatDateTime(clock.date, "HH:mm")
                     color: Theme.text
                     font.family: Theme.display
-                    font.pixelSize: 72 * surface.uiScale
+                    font.pixelSize: 56 * surface.s
                     font.weight: Font.Light
-                    font.letterSpacing: -2 * surface.uiScale
+                    font.letterSpacing: -1.6 * surface.s
                 }
                 Text {
+                    id: dateText
+                    anchors.top: clockText.bottom
+                    anchors.topMargin: 4 * surface.s
                     text: Strings.date(clock.date)
                     color: Theme.secondary
                     font.family: Theme.sans
-                    font.pixelSize: 14 * surface.uiScale
+                    font.pixelSize: 13 * surface.s
                 }
-            }
-            Column {
-                anchors.right: parent.right
-                anchors.rightMargin: surface.pad
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: surface.pad - 4 * surface.uiScale
-                spacing: 3 * surface.uiScale
-                visible: surface.stats !== null && surface.stats.uptimeSeconds > 0
                 Text {
                     anchors.right: parent.right
-                    text: "UPTIME"
+                    anchors.baseline: dateText.baseline
+                    visible: surface.stats !== null && surface.stats.uptimeSeconds > 0
+                    text: surface.stats ? Strings.uptime + " " + surface.uptimeText(surface.stats.uptimeSeconds) : ""
                     color: Theme.quiet
                     font.family: Theme.sans
-                    font.pixelSize: 10 * surface.uiScale
-                    font.letterSpacing: 1.4 * surface.uiScale
-                }
-                Text {
-                    anchors.right: parent.right
-                    text: surface.stats ? surface.uptimeText(surface.stats.uptimeSeconds) : ""
-                    color: Theme.secondary
-                    font.family: Theme.sans
-                    font.pixelSize: 14 * surface.uiScale
+                    font.pixelSize: 12 * surface.s
                 }
             }
-        }
 
-        LockCard {
-            width: parent.width
-            height: loginColumn.implicitHeight + 2 * surface.pad
-            scaleFactor: surface.uiScale
+            Item {
+                width: 1
+                height: 26 * surface.s
+            }
 
-            Column {
-                id: loginColumn
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.margins: surface.pad
-                spacing: 0
-
-                Row {
-                    spacing: 14 * surface.uiScale
-                    Avatar {
-                        size: 46 * surface.uiScale
-                        name: surface.userName
-                        source: "file://" + (Quickshell.env("HOME") || "") + "/.face"
-                    }
-                    Column {
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 2 * surface.uiScale
-                        Text {
-                            text: Strings.greeting(clock.date.getHours())
-                            color: Theme.secondary
-                            font.family: Theme.sans
-                            font.pixelSize: 13 * surface.uiScale
-                        }
-                        Text {
-                            text: surface.userName
-                            color: Theme.text
-                            font.family: Theme.display
-                            font.pixelSize: 22 * surface.uiScale
-                        }
-                    }
+            // Identity.
+            Row {
+                spacing: 14 * surface.s
+                Avatar {
+                    size: 44 * surface.s
+                    name: surface.userName
+                    source: "file://" + (Quickshell.env("HOME") || "") + "/.face"
                 }
-                Item {
-                    width: 1
-                    height: 24 * surface.uiScale
-                }
-
-                // Password line: dots on a hairline, lilac only while in use.
-                Item {
-                    id: field
-                    width: parent.width
-                    height: 40 * surface.uiScale
-
+                Column {
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 2 * surface.s
                     Text {
-                        visible: input.text.length === 0
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Strings.pt ? "Digite sua senha" : "Enter your password"
-                        color: Theme.placeholder
+                        text: Strings.greeting(clock.date.getHours())
+                        color: Theme.secondary
                         font.family: Theme.sans
-                        font.pixelSize: 17 * surface.uiScale
+                        font.pixelSize: 13 * surface.s
                     }
-                    TextInput {
-                        id: input
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        echoMode: TextInput.Password
-                        passwordCharacter: "\u2022"
+                    Text {
+                        text: surface.userName
                         color: Theme.text
-                        selectionColor: Theme.selection
-                        selectedTextColor: Theme.selectedText
                         font.family: Theme.sans
-                        font.pixelSize: 20 * surface.uiScale
-                        font.letterSpacing: 3 * surface.uiScale
-                        clip: true
-                        focus: true
-                        enabled: !surface.busy
-                        Component.onCompleted: forceActiveFocus()
-                        onTextChanged: {
-                            if (text.length > 0)
-                                typingDecay.restart();
-                        }
-                        onAccepted: {
-                            const password = text;
-                            text = "";
-                            surface.submitted(password);
-                        }
-                        Keys.onEscapePressed: text = ""
+                        font.pixelSize: 20 * surface.s
+                        font.letterSpacing: -.3 * surface.s
                     }
-                    Rectangle {
-                        anchors.bottom: parent.bottom
-                        width: parent.width
-                        height: 1
-                        color: Theme.outline
-                    }
-                    Rectangle {
-                        anchors.bottom: parent.bottom
-                        height: 1
-                        width: input.text.length > 0 || surface.busy ? parent.width : 50 * surface.uiScale
-                        color: Theme.lilac
-                        opacity: surface.busy || input.text.length > 0 || surface.failed ? 1 : .55
-                        Behavior on width {
-                            NumberAnimation {
-                                duration: 260
-                                easing.type: Easing.InOutCubic
-                            }
-                        }
-                    }
-                }
-                Text {
-                    topPadding: 14 * surface.uiScale
-                    text: surface.failed ? (Strings.pt ? "Senha incorreta. Tente de novo." : "Wrong password. Try again.") : keyboard.capsLock ? Strings.capsLock : (Strings.pt ? "Enter para desbloquear" : "Enter to unlock")
-                    color: surface.failed || keyboard.capsLock ? Theme.secondary : Theme.quiet
-                    font.family: Theme.sans
-                    font.pixelSize: 13 * surface.uiScale
                 }
             }
-        }
 
-        LockCard {
-            width: parent.width
-            visible: media.shown
-            height: media.shown ? media.height + 28 * surface.uiScale : 0
-            scaleFactor: surface.uiScale
+            Item {
+                width: 1
+                height: 14 * surface.s
+            }
 
+            LockPasswordField {
+                id: field
+                width: parent.width
+                scaleFactor: surface.s
+                busy: surface.busy
+                capsLock: keyboard.capsLock || surface.capsLockOverride
+                failureCount: surface.failureCount
+                Component.onCompleted: focusInput()
+                onSubmitted: password => surface.submitted(password)
+                onTyped: typingDecay.restart()
+                Connections {
+                    target: field.input
+                    function onActiveFocusChanged() {
+                        if (!field.input.activeFocus)
+                            Qt.callLater(surface.refocus);
+                    }
+                }
+            }
+
+            // Player.
+            Item {
+                width: parent.width
+                height: media.shown ? 22 * surface.s : 0
+                visible: media.shown
+            }
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: Theme.surfaceEdge
+                visible: media.shown
+            }
+            Item {
+                width: parent.width
+                height: media.shown ? 16 * surface.s : 0
+                visible: media.shown
+            }
             MediaCard {
                 id: media
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.leftMargin: 14 * surface.uiScale
-                anchors.rightMargin: 14 * surface.uiScale
-                scaleFactor: surface.uiScale
+                width: parent.width
+                scaleFactor: surface.s
+                previewPlayer: surface.previewPlayer
+                preferPreview: surface.preferPreviewPlayer
+                onInteracted: surface.refocus()
+            }
+
+            // Readings.
+            Item {
+                width: parent.width
+                height: 22 * surface.s
+                visible: readings.visible
+            }
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: Theme.surfaceEdge
+                visible: readings.visible
+            }
+            Item {
+                width: parent.width
+                height: 16 * surface.s
+                visible: readings.visible
+            }
+            Row {
+                id: readings
+                width: parent.width
+                visible: surface.stats !== null
+                readonly property bool showBluetooth: surface.stats !== null && surface.stats.btState !== "none"
+                readonly property bool showGpu: surface.stats !== null && surface.stats.gpu >= 0
+                // Named readings get more room than the percentage gauges.
+                readonly property real gap: 16 * surface.s
+                readonly property real units: 1.7 + (showBluetooth ? 1.4 : 0) + 2 + (showGpu ? 1 : 0)
+                readonly property int count: 3 + (showBluetooth ? 1 : 0) + (showGpu ? 1 : 0)
+                readonly property real unit: (width - gap * (count - 1)) / units
+                readonly property real cell: unit
+                spacing: gap
+
+                StatTile {
+                    width: readings.unit * 1.7
+                    scaleFactor: surface.s
+                    title: surface.stats && surface.stats.netType === "ethernet" ? Strings.ethernet : Strings.wifi
+                    value: !surface.stats || surface.stats.netType === "none" ? Strings.noConnection : (surface.stats.netName || Strings.connected)
+                }
+                StatTile {
+                    width: readings.unit * 1.4
+                    visible: readings.showBluetooth
+                    scaleFactor: surface.s
+                    title: Strings.bluetooth
+                    value: !surface.stats || surface.stats.btState === "none" ? Strings.unavailable : surface.stats.btState === "off" ? Strings.switchedOff : (surface.stats.btDevice || Strings.switchedOn)
+                }
+                StatTile {
+                    width: readings.cell
+                    scaleFactor: surface.s
+                    title: "CPU"
+                    value: surface.stats && surface.stats.cpu >= 0 ? surface.stats.cpu + "%" : "—"
+                    fraction: surface.stats && surface.stats.cpu >= 0 ? surface.stats.cpu / 100 : -1
+                }
+                StatTile {
+                    width: readings.cell
+                    scaleFactor: surface.s
+                    title: "RAM"
+                    value: surface.stats && surface.stats.ram >= 0 ? surface.stats.ramGb.toFixed(1) + " GB" : "—"
+                    fraction: surface.stats && surface.stats.ram >= 0 ? surface.stats.ram / 100 : -1
+                }
+                StatTile {
+                    id: gpuTile
+                    width: readings.cell
+                    visible: readings.showGpu
+                    scaleFactor: surface.s
+                    title: "GPU"
+                    value: surface.stats && surface.stats.gpu >= 0 ? surface.stats.gpu + "%" : "—"
+                    fraction: surface.stats && surface.stats.gpu >= 0 ? surface.stats.gpu / 100 : -1
+                }
             }
         }
-    }
-
-    // ---- bottom strip: network, bluetooth, system load -------------------
-    Row {
-        id: strip
-        anchors.right: parent.right
-        anchors.rightMargin: surface.edgeMargin
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: Math.max(36, surface.height * .045)
-        spacing: 12 * surface.uiScale
-        visible: surface.stats !== null
-
-        StatTile {
-            scaleFactor: surface.uiScale
-            width: 180 * surface.uiScale
-            title: surface.stats && surface.stats.netType === "ethernet" ? (Strings.pt ? "Cabo" : "Ethernet") : "Wi-Fi"
-            value: !surface.stats || surface.stats.netType === "none" ? Strings.noConnection : (surface.stats.netName || Strings.connected)
-        }
-        StatTile {
-            scaleFactor: surface.uiScale
-            width: 180 * surface.uiScale
-            title: "Bluetooth"
-            value: !surface.stats || surface.stats.btState === "none" ? Strings.unavailable : surface.stats.btState === "off" ? (Strings.pt ? "Desligado" : "Off") : (surface.stats.btDevice || (Strings.pt ? "Ligado" : "On"))
-        }
-        StatTile {
-            scaleFactor: surface.uiScale
-            title: "CPU"
-            value: surface.stats && surface.stats.cpu >= 0 ? surface.stats.cpu + "%" : "\u2014"
-            fraction: surface.stats && surface.stats.cpu >= 0 ? surface.stats.cpu / 100 : -1
-        }
-        StatTile {
-            scaleFactor: surface.uiScale
-            title: "RAM"
-            value: surface.stats && surface.stats.ram >= 0 ? surface.stats.ram + "%  \u00b7  " + surface.stats.ramGb.toFixed(1) + " GB" : "\u2014"
-            width: 190 * surface.uiScale
-            fraction: surface.stats && surface.stats.ram >= 0 ? surface.stats.ram / 100 : -1
-        }
-        StatTile {
-            visible: surface.stats !== null && surface.stats.gpu >= 0
-            scaleFactor: surface.uiScale
-            title: "GPU"
-            value: surface.stats && surface.stats.gpu >= 0 ? surface.stats.gpu + "%" : "\u2014"
-            fraction: surface.stats && surface.stats.gpu >= 0 ? surface.stats.gpu / 100 : -1
-        }
-    }
-
-    // Keep typing even if focus is lost (mouse click on the player).
-    MouseArea {
-        anchors.fill: parent
-        z: -1
-        onClicked: input.forceActiveFocus()
     }
 }
