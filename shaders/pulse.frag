@@ -84,5 +84,11 @@ void main(){
     color+=silver*atmosphere;
     color*=.97+.03*sin(time*.30);
     color*=1.-smoothstep(.58,1.,successProgress);
+#ifdef UMBRA_LOCK
+    // Lock screen over a blurred desktop: the sphere occludes what is behind
+    // it, rings, stars and the limb only add light (premultiplied, alpha 0).
+    fragColor=vec4(color,mask*(1.-smoothstep(.58,1.,successProgress)))*qt_Opacity;
+#else
     fragColor=vec4(color,1.)*qt_Opacity;
+#endif
 }
