@@ -67,7 +67,13 @@ As alterações valem no próximo início do greeter.
 
 ### Manutenção e diagnóstico
 
-Após atualizar Qt ou Quickshell, o hook verifica a versão exata do Qt e o carregamento do módulo de apresentação. Se a checagem de inicialização falhar, o greeter oferece login em texto pelo agreety. Recompile e reinstale para recuperar o login gráfico:
+Após atualizar Qt ou Quickshell, o hook verifica a versão exata do Qt e, se o módulo de apresentação deixar de carregar, recompila-o automaticamente a partir de `/usr/src/nocturne-greeter` (precisa de `gcc`, `pkgconf` e `wayland-protocols`). O módulo recompilado é verificado antes de substituir o antigo e vale a partir da próxima tela de login. Se a recompilação automática falhar, a checagem de inicialização oferece login em texto pelo agreety. Recompile manualmente para recuperar o login gráfico:
+
+```sh
+sudo /usr/lib/nocturne-greeter/nocturne-greeter-update   # recompila só o módulo
+```
+
+ou reinstale o pacote inteiro:
 
 ```sh
 cd packaging/arch   # a partir da raiz do clone

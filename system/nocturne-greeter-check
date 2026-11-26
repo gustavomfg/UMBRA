@@ -14,7 +14,7 @@ while (($#)); do
 done
 fail() {
     printf '%s\n' "nocturne-greeter: $1" >&2
-    printf '%s\n' 'Rebuild and reinstall nocturne-greeter (makepkg -sif). Text login is available through agreety until then.' >&2
+    printf '%s\n' 'Run sudo /usr/lib/nocturne-greeter/nocturne-greeter-update, or rebuild and reinstall nocturne-greeter (makepkg -sif). Text login is available through agreety until then.' >&2
     if ((hook)); then exit 0; else exit 1; fi
 }
 [[ -r "$module_dir/qt-version" ]] || fail 'presentation build metadata is missing'
