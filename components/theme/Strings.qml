@@ -48,19 +48,4 @@ QtObject {
     readonly property string noUsers: pt ? "Nenhum usuário de login encontrado." : "No login users were found."
     readonly property string noSessions: pt ? "Nenhuma sessão disponível. Um administrador precisa executar nocturne-greeter-sessions." : "No sessions are available. An administrator must run nocturne-greeter-sessions."
     readonly property string presentationMissing: pt ? "Login indisponível: o módulo de apresentação não carregou. Recompile o nocturne-greeter." : "Sign-in is unavailable: the presentation module did not load. Rebuild nocturne-greeter."
-
-    // Lock screen
-    readonly property string lockHint: pt ? "Enter para desbloquear  ·  Esc para limpar" : "Enter to unlock  ·  Esc to clear"
-    readonly property string lockChecking: pt ? "Verificando…" : "Checking…"
-    readonly property string lockFailed: pt ? "Senha incorreta. Tente de novo." : "Wrong password. Try again."
-    readonly property string unlock: pt ? "Desbloquear" : "Unlock"
-    readonly property string uptime: pt ? "ligado há" : "up"
-    readonly property string wifi: "Wi-Fi"
-    readonly property string ethernet: pt ? "Cabo" : "Ethernet"
-    readonly property string bluetooth: "Bluetooth"
-    readonly property string switchedOn: pt ? "Ligado" : "On"
-    readonly property string switchedOff: pt ? "Desligado" : "Off"
-    readonly property string previous: pt ? "Anterior" : "Previous"
-    readonly property string playPause: pt ? "Reproduzir ou pausar" : "Play or pause"
-    readonly property string next: pt ? "Próxima" : "Next"
 }

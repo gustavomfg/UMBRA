@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-# Builds the lock's variant of the planet shader (same source as the
-# greeter, with UMBRA_LOCK: the planet blends over the blurred desktop).
-set -euo pipefail
-root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-qsb="$(command -v qsb || echo /usr/lib/qt6/bin/qsb)"
-"$qsb" --qt6 -D UMBRA_LOCK "$root/shaders/pulse.frag" -o "$root/shaders/pulse-lock.frag.qsb"
