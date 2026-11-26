@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Starts the UMBRA lock screen. Bind it in Hyprland, e.g.
+#   hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("~/Documentos/projetos/umbra/lock/umbra-lock"))
+# Recovery if it ever hangs: Ctrl+Alt+F3, log in, `pkill quickshell`.
+set -euo pipefail
+dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+command -v quickshell >/dev/null 2>&1 || { echo "quickshell not found" >&2; exit 127; }
+# One lock at a time; a second press does nothing.
+if pgrep -f -- "quickshell.*lock\.qml" >/dev/null 2>&1; then exit 0; fi
+export QSG_RENDER_LOOP="${QSG_RENDER_LOOP:-threaded}"
+exec quickshell --no-color --path "$dir/../lock.qml"
