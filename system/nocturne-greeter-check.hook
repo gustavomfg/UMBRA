@@ -7,6 +7,6 @@ Target = qt6-declarative
 Target = quickshell
 
 [Action]
-Description = Checking that the Nocturne presentation module still loads...
+Description = Keeping the Nocturne presentation module in step with Qt...
 When = PostTransaction
-Exec = /usr/lib/nocturne-greeter/nocturne-greeter-check --hook
+Exec = /usr/lib/nocturne-greeter/nocturne-greeter-update --hook

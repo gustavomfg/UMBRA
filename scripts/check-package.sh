@@ -11,10 +11,15 @@ module="$work/usr/lib/qt6/qml/Nocturne/Presentation"
 for file in shell.qml components/GreetdAuthenticator.qml components/GreeterSystemStatus.qml components/SessionLaunchGate.qml shaders/pulse.frag.qsb; do
     test -s "$share/$file"
 done
-for helper in nocturne-greeter-start nocturne-greeter-check nocturne-recovery-session nocturne-greeter-sessions; do
+for helper in nocturne-greeter-start nocturne-greeter-check nocturne-greeter-update nocturne-recovery-session nocturne-greeter-sessions; do
     test -x "$work/usr/lib/nocturne-greeter/$helper"
 done
 test -s "$module/qt-version"
+test -x "$work/usr/src/nocturne-greeter/scripts/build-presentation-probe.sh"
+for source in plugin.cpp presentationprobe.cpp presentationprobe.h qmldir; do
+    test -s "$work/usr/src/nocturne-greeter/presentation/$source"
+done
+grep -q 'nocturne-greeter-update --hook' "$work/usr/share/libalpm/hooks/nocturne-greeter-check.hook"
 cmp "$project_root/LICENSE" "$work/usr/share/licenses/nocturne-greeter/LICENSE"
 if find "$share" -type f | grep -Eq 'Preview|Mock|Harness|E2EDriver'; then
     echo 'FAIL: a development adapter was packaged' >&2; exit 1

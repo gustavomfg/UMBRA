@@ -1,5 +1,22 @@
 # Qt upgrades and recovery
 
+## Automatic rebuild
+
+After a Qt or Quickshell upgrade the pacman hook runs
+`/usr/lib/nocturne-greeter/nocturne-greeter-update --hook`. If the preflight
+says the presentation module no longer loads, the helper rebuilds it from
+`/usr/src/nocturne-greeter` in a scratch directory as an unprivileged user,
+runs the same preflight on the rebuilt copy, and only then swaps it in. A failed
+rebuild keeps the installed module and the text-login fallback below. The
+helper never restarts greetd, so the new module applies from the next login
+screen. It needs `gcc`, `pkgconf` and `wayland-protocols`, which the package
+depends on.
+
+Run it by hand with `sudo /usr/lib/nocturne-greeter/nocturne-greeter-update`;
+add `--force` to rebuild even when the preflight passes. A Quickshell API
+change cannot be fixed by a rebuild: the preflight still fails and the text
+login stays until the greeter QML is updated.
+
 The presentation plugin uses Qt's QPA native interface. It must be rebuilt
 against the exact installed Qt version. The package records that version in
 `/usr/lib/qt6/qml/Nocturne/Presentation/qt-version`.
@@ -35,7 +52,9 @@ Do not start or restart greetd from an active desktop while testing this.
 ## Upgrade/rebuild
 
 1. Keep the previous package file and the documented TTY recovery commands.
-2. After updating Qt or Quickshell, rebuild with `makepkg -sif`.
+2. After updating Qt or Quickshell the hook rebuilds the module itself. If it
+   could not, run `sudo /usr/lib/nocturne-greeter/nocturne-greeter-update` or
+   rebuild the package with `makepkg -sif`.
 3. Run `/usr/lib/nocturne-greeter/nocturne-greeter-check` and check its exit
    status. Successful offscreen loading does not prove DRM or frame delivery.
 4. From a disposable VM or a maintenance TTY, verify login/logout, then reboot.
@@ -47,6 +66,7 @@ Do not start or restart greetd from an active desktop while testing this.
 ```sh
 ./scripts/build-presentation-probe.sh
 ./scripts/test-upgrade-recovery.sh
+./scripts/test-auto-rebuild.sh   # automatic rebuild, with a fake Qt and no host changes
 ```
 
 This tests exact-version mismatch, an unloadable `.so`, restoration of the

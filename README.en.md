@@ -67,7 +67,13 @@ Changes apply the next time the greeter starts.
 
 ### Maintenance and diagnostics
 
-After Qt or Quickshell updates, the package hook checks the exact Qt build version and loads the presentation module. A failed startup preflight offers text login through agreety. Rebuild and reinstall to restore the graphical login:
+After Qt or Quickshell updates, the package hook checks the exact Qt build version and, if the presentation module no longer loads, rebuilds it automatically from `/usr/src/nocturne-greeter` (it needs `gcc`, `pkgconf` and `wayland-protocols`). The rebuilt module is verified before it replaces the old one, and it applies from the next login screen. If the automatic rebuild fails, a failed startup preflight offers text login through agreety. Rebuild by hand to restore the graphical login:
+
+```sh
+sudo /usr/lib/nocturne-greeter/nocturne-greeter-update   # rebuild only the module
+```
+
+or reinstall the whole package:
 
 ```sh
 cd packaging/arch   # from the repository root

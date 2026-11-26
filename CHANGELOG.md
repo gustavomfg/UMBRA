@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — package revision 1.0.0-3
+
+- Rebuild the presentation module automatically after Qt/Quickshell upgrades.
+  The pacman hook now runs `nocturne-greeter-update`, which compiles the module
+  from `/usr/src/nocturne-greeter` as an unprivileged user, verifies it with the
+  preflight and only then swaps it in. A failed rebuild keeps the installed
+  module and the agreety text login. `--force` rebuilds on demand.
+- The package now depends on `gcc`, `pkgconf` and `wayland-protocols` and ships
+  the module sources; `scripts/test-auto-rebuild.sh` covers the rebuild with a
+  fake Qt.
+
 ## After 1.0.0 — package revision 1.0.0-2
 
 - Remove the Nocturne symbol and wordmark from the greeter header.

@@ -1,0 +1,109 @@
+#!/bin/bash
+# Keeps the Nocturne presentation module in step with the installed Qt.
+#
+# The module uses Qt's QPA native interface, so it only loads with the exact Qt
+# build it was compiled for. This helper runs after Qt/Quickshell upgrades (the
+# pacman hook) and, when the preflight says the module no longer loads, rebuilds
+# it from /usr/src/nocturne-greeter in a scratch directory as an unprivileged
+# user, verifies the rebuilt copy with the same preflight, and only then swaps
+# it in. A failed rebuild leaves the installed module, and the agreety text
+# login fallback, exactly as they were. It never restarts greetd.
+#
+#   --hook           never fail the pacman transaction (always exit 0)
+#   --force          rebuild even if the preflight already passes
+#   --module-dir P   installed module (default /usr/lib/qt6/qml/Nocturne/Presentation)
+#   --src-dir P      tree holding presentation/ and scripts/ (default /usr/src/nocturne-greeter)
+#   --check-cmd P    preflight command (default /usr/lib/nocturne-greeter/nocturne-greeter-check)
+#   --build-user U   unprivileged build user, or "none" (default nobody)
+set -uo pipefail
+
+hook=0
+force=0
+module_dir=/usr/lib/qt6/qml/Nocturne/Presentation
+src_dir=/usr/src/nocturne-greeter
+check_cmd=/usr/lib/nocturne-greeter/nocturne-greeter-check
+build_user=nobody
+while (($#)); do
+    case "$1" in
+        --hook) hook=1; shift ;;
+        --force) force=1; shift ;;
+        --module-dir) module_dir="${2:?missing module directory}"; shift 2 ;;
+        --src-dir) src_dir="${2:?missing source directory}"; shift 2 ;;
+        --check-cmd) check_cmd="${2:?missing check command}"; shift 2 ;;
+        --build-user) build_user="${2:?missing build user}"; shift 2 ;;
+        *) echo "Usage: $0 [--hook] [--force] [--module-dir P] [--src-dir P] [--check-cmd P] [--build-user U|none]" >&2; exit 2 ;;
+    esac
+done
+
+say() { printf '%s\n' "nocturne-greeter: $1"; }
+fail() {
+    printf '%s\n' "nocturne-greeter: $1" >&2
+    printf '%s\n' 'Text login (agreety) stays available. To restore the graphical login by hand: cd packaging/arch && makepkg -sif' >&2
+    if ((hook)); then exit 0; fi
+    exit 1
+}
+
+if ((! force)); then
+    if "$check_cmd" --module-dir "$module_dir" >/dev/null 2>&1; then
+        say 'presentation module matches the installed Qt; nothing to rebuild'
+        exit 0
+    fi
+    say 'presentation module no longer loads; rebuilding it for the installed Qt'
+else
+    say 'forced rebuild requested'
+fi
+
+build_script="$src_dir/scripts/build-presentation-probe.sh"
+[[ -x "$build_script" && -d "$src_dir/presentation" ]] || fail "build sources are missing in $src_dir"
+
+work="$(mktemp -d /var/tmp/nocturne-greeter-update.XXXXXX)" || fail 'cannot create a scratch directory'
+trap 'rm -rf -- "$work"' EXIT
+chmod 700 "$work"
+runner=()
+if [[ "$build_user" != none ]]; then
+    id -u "$build_user" >/dev/null 2>&1 || fail "build user $build_user does not exist"
+    chown "$build_user" "$work" || fail 'cannot hand the scratch directory to the build user'
+    runner=(runuser -u "$build_user" --)
+fi
+
+# Compile as the unprivileged user; the log is written by root outside its reach.
+build_log="$work/build.log"
+if ! "${runner[@]}" env HOME="$work" NOCTURNE_BUILD_DIR="$work/build" timeout 300 "$build_script" >"$build_log" 2>&1; then
+    tail -8 "$build_log" >&2
+    fail 'rebuilding the presentation module failed (are gcc, pkgconf and wayland-protocols installed?)'
+fi
+new_module="$work/build/qml/Nocturne/Presentation"
+for file in libnocturnepresentation.so qmldir qt-version; do
+    [[ -s "$new_module/$file" ]] || fail "the rebuild did not produce $file"
+done
+
+# The rebuilt copy has to pass the same preflight before it replaces anything.
+if ! verify_out="$("$check_cmd" --module-dir "$new_module" 2>&1)"; then
+    printf '%s\n' "$verify_out" | tail -8 >&2
+    fail 'the rebuilt module did not pass the preflight; keeping the installed one'
+fi
+
+parent="$(dirname -- "$module_dir")"
+staging="$parent/.nocturne-presentation.new"
+backup="$parent/.nocturne-presentation.old"
+rm -rf -- "$staging" "$backup"
+install -d -m755 "$staging" || fail 'cannot stage the rebuilt module'
+for file in libnocturnepresentation.so qmldir qt-version; do
+    install -m644 "$new_module/$file" "$staging/$file" || { rm -rf -- "$staging"; fail "cannot stage $file"; }
+done
+if [[ -e "$module_dir" ]]; then
+    mv -- "$module_dir" "$backup" || { rm -rf -- "$staging"; fail 'cannot move the installed module aside'; }
+fi
+if ! mv -- "$staging" "$module_dir"; then
+    [[ -e "$backup" ]] && mv -- "$backup" "$module_dir"
+    rm -rf -- "$staging"
+    fail 'cannot install the rebuilt module; the previous one was restored'
+fi
+if ! final_out="$("$check_cmd" --module-dir "$module_dir" 2>&1)"; then
+    printf '%s\n' "$final_out" | tail -8 >&2
+    rm -rf -- "$module_dir"
+    [[ -e "$backup" ]] && mv -- "$backup" "$module_dir"
+    fail 'the installed copy failed its final check; the previous module was restored'
+fi
+rm -rf -- "$backup"
+say "presentation module rebuilt for Qt $(cat "$module_dir/qt-version"); it applies from the next login screen"

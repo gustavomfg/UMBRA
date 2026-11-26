@@ -67,8 +67,9 @@ guard 11/11; nine protocol fixture scenarios; qmllint.
 - In the VM the shader costs ≈ 1.7 cores (llvmpipe); not measured on the GPU.
 - After a Quickshell crash, launch is delayed ≈ 5 s (crash helper).
 - The presentation module is compiled against the installed Qt. The
-  `nocturne-greeter-check` hook warns after Qt/Quickshell upgrades if it no
-  longer loads; rebuild the package then (`makepkg -sif`). Until rebuilt, the
+  `nocturne-greeter-check` hook rebuilds it after Qt/Quickshell upgrades
+  (`nocturne-greeter-update`); if that fails, rebuild the package by hand
+  (`makepkg -sif`). Until rebuilt, the
   greeter shows a notice and refuses to start sessions; log in on a TTY.
 
 ## Item 5 runbook — install on this workstation
