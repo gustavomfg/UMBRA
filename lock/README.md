@@ -88,7 +88,6 @@ preferring one that is playing, then Spotify.
 | `components/MediaCard.qml`, `StatTile.qml`, `Avatar.qml`, `LockCard.qml` | Panel parts |
 | `shaders/pulse-lock.frag.qsb` | The planet shader built with `UMBRA_LOCK` (`lock/build-shader`) |
 | `lock/umbra-lock`, `lock/umbra-lock-stats` | Launcher and readings sampler |
-| `lock/hyprlock.conf`, `lock/umbra-lock-bg.png` | Static hyprlock fallback |
 
 Quickshell resolves QML only inside the config directory, so `lock.qml`
 stays at the repository root and its parts in `components/`.
