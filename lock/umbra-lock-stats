@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# One sample of the numbers the lock screen shows, as key=value lines.
+# Every probe is optional: a missing tool just leaves its line as "none".
+# The slow probes (nvidia-smi, nmcli, bluetoothctl) run in parallel with
+# the CPU sample, so one sample takes ~0.4-1 s instead of several seconds.
+set -u
+
+work="$(mktemp -d "${XDG_RUNTIME_DIR:-/tmp}/umbra-lock-stats.XXXXXX")" || exit 1
+trap 'rm -rf -- "$work"' EXIT
+
+gpu_probe() {
+    if command -v nvidia-smi >/dev/null 2>&1; then
+        g=$(timeout 2 nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits 2>/dev/null | head -n1 | tr -d ' ')
+        echo "gpu=${g:-none}"
+    else
+        echo "gpu=none"
+    fi
+}
+net_probe() {
+    net="none"
+    if command -v nmcli >/dev/null 2>&1; then
+        while IFS=: read -r type state conn; do
+            [[ "$state" == "connected" && ( "$type" == "wifi" || "$type" == "ethernet" ) ]] || continue
+            net="$type|$conn"; break
+        done < <(timeout 2 nmcli -t -f TYPE,STATE,CONNECTION device status 2>/dev/null)
+    fi
+    echo "net=$net"
+}
+bt_probe() {
+    bt="none"
+    if command -v bluetoothctl >/dev/null 2>&1; then
+        p=$(timeout 1 bluetoothctl show 2>/dev/null | awk '/Powered:/{print $2}')
+        if [[ "$p" == "yes" ]]; then
+            d=$(timeout 1 bluetoothctl devices Connected 2>/dev/null | head -n1 | cut -d' ' -f3-)
+            bt="on|$d"
+        elif [[ -n "$p" ]]; then
+            bt="off|"
+        fi
+    fi
+    echo "bt=$bt"
+}
+gpu_probe > "$work/gpu" &
+net_probe > "$work/net" &
+bt_probe > "$work/bt" &
+
+read -r up _ < /proc/uptime
+echo "uptime=${up%.*}"
+
+# CPU: two samples of /proc/stat 0.35 s apart.
+read -r _ u1 n1 s1 i1 w1 q1 sq1 st1 _ < /proc/stat
+sleep 0.35
+read -r _ u2 n2 s2 i2 w2 q2 sq2 st2 _ < /proc/stat
+busy=$(( (u2+n2+s2+q2+sq2+st2) - (u1+n1+s1+q1+sq1+st1) ))
+idle=$(( (i2+w2) - (i1+w1) ))
+total=$(( busy + idle ))
+if (( total > 0 )); then echo "cpu=$(( busy * 100 / total ))"; else echo "cpu=none"; fi
+
+# RAM: used share of MemTotal.
+awk '/^MemTotal:/{t=$2} /^MemAvailable:/{a=$2} END{ if (t>0) printf "ram=%d\nramgb=%.1f\n", (t-a)*100/t, (t-a)/1048576; else print "ram=none" }' /proc/meminfo
+
+wait
+cat "$work/gpu" "$work/net" "$work/bt"
